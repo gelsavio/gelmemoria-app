@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gabriela Accioly Psi - Memória</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <div id="top-bar">
+            <div class="brand-section">
+                <h1>🧠 Gabriela Accioly Psi - Memória</h1>
+                <div id="item-atualizar-app" style="display:none;" onclick="forcarAtualizacao()">
+                    🔄 Nova versão! Atualizar
+                </div>
+            </div>
+            <div id="stats">
+                <span>👤 <span id="current-player-name">Anônimo</span></span>
+                <span>⭐ <span id="current-score">0</span> pts</span>
+                <span>🏆 <span id="high-score">0</span></span>
+            </div>
+            <div id="controls">
+                <button id="sound-btn" onclick="toggleSound()" title="Alternar Som">🔊</button>
+                <button onclick="showLoginModal()" title="Trocar Jogador">👥</button>
+            </div>
+        </div>
+
+        <div id="board-area">
+            <div class="simon-board board-4" id="board">
+                <div class="pad green" id="pad-0" onclick="handlePadClick(0)"></div>
+                <div class="pad red" id="pad-1" onclick="handlePadClick(1)"></div>
+                <div class="pad yellow" id="pad-2" onclick="handlePadClick(2)"></div>
+                <div class="pad blue" id="pad-3" onclick="handlePadClick(3)"></div>
+                <div class="pad orange" id="pad-4" onclick="handlePadClick(4)" style="display:none;"></div>
+                <div class="pad purple" id="pad-5" onclick="handlePadClick(5)" style="display:none;"></div>
+                <div class="pad cyan" id="pad-6" onclick="handlePadClick(6)" style="display:none;"></div>
+                <div class="pad pink" id="pad-7" onclick="handlePadClick(7)" style="display:none;"></div>
+            </div>
+            <div class="game-action">
+                <button id="start-btn" onclick="toggleGame()">JOGAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-overlay" class="modal-overlay show">
+        <div class="modal-box">
+            <h2>Configurações do Jogo</h2>
+
+            <div class="settings-group">
+                <h3>Formato do Tabuleiro / Cores:</h3>
+                <div class="color-radios">
+                    <label><input type="radio" name="colorCount" value="4" checked> 4 (Losango)</label>
+                    <label><input type="radio" name="colorCount" value="5"> 5 (Pentágono)</label>
+                    <label><input type="radio" name="colorCount" value="6"> 6 (Hexágono)</label>
+                </div>
+                <div class="color-radios" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <label><input type="radio" name="colorCount" value="7"> 7 Cores</label>
+                    <label><input type="radio" name="colorCount" value="8"> 8 Cores</label>
+                </div>
+            </div>
+
+            <div id="user-list-container">
+                <h3>Selecionar Usuário:</h3>
+                <ul id="user-list"></ul>
+            </div>
+
+            <div class="new-user-form">
+                <h3>Cadastrar Novo Perfil:</h3>
+                <input type="text" id="new-user-name" placeholder="Nome do Jogador" maxlength="15">
+                <input type="number" id="new-user-age" placeholder="Idade (Opcional)" min="1" max="120">
+                <button class="btn-modal btn-action" onclick="createNewUser()">Cadastrar e Iniciar</button>
+            </div>
+
+            <div class="btn-group" style="margin-top: 15px;">
+                <button class="btn-modal btn-no" onclick="playAnonymous()">Modo Anônimo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameover-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <h2>Fim de Jogo!</h2>
+            <p id="gameover-msg"></p>
+            <button class="btn-modal btn-yes" onclick="closeGameOver()">Tentar Novamente</button>
+        </div>
+    </div>
+
+    <script src="app.js?v=1.2.0"></script>
+    <script>
+        let newWorker;
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    reg.addEventListener('updatefound', () => {
+                        newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                document.getElementById('item-atualizar-app').style.display = 'flex';
+                            }
+                        });
+                    });
+                });
+            });
+        }
+
+        function forcarAtualizacao() {
+            if (newWorker) newWorker.postMessage({
+                action: 'skipWaiting'
+            });
+            window.location.reload();
+        }
+    </script>
+</body>
+
+</html>
