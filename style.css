@@ -745,7 +745,31 @@ body {
 
 /* Container de Status aprimorado */
 
+
+/* Ícone no centro da roda */
+
+.board-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    margin-top: -30px;
+    margin-left: -30px;
+    background-image: url('icon-192x192.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 15;
+    /* Acima do furo do tabuleiro */
+    pointer-events: none;
+}
+
 #status-message {
+    height: 40px;
+    /* Altura fixa para não "pular" o layout */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     font-weight: bold;
     font-size: 1.1rem;

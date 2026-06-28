@@ -325,12 +325,14 @@ function setTrackedTimeout(fn, delay) {
     return id;
 }
 
+// Ajuste na função que limpa os tempos para evitar o bug do "nível 4 com vários tempos"
 function resetGameStats() {
     sequence = [];
     score = 0;
     sessionReactionTimes = [];
-    bestRoundReactionTimes = [];
     document.getElementById('current-score').textContent = score;
+    // Força a mensagem inicial sempre que uma rodada é resetada
+    updateStatus("Prepare-se para começar!", "idle");
     clearAllTimeouts();
 }
 
@@ -423,11 +425,14 @@ function gameOver() {
     }
 
     if (currentUser) {
-        // Guarda a última sessão (mesmo com erro)
+        // Ao invés de usar bestRoundReactionTimes, usamos a sessão atual limitada ao score real
+        // Isso garante que se o jogador errou no passo 4, ele só guarde 4 tempos
+        const validSessionTimes = sessionReactionTimes.slice(0, score);
+
         currentUser.lastSession = {
             colors: currentColorCount,
             score: score,
-            speed: [...sessionReactionTimes]
+            speed: validSessionTimes
         };
 
         // Atualiza recorde se superado
