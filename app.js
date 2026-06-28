@@ -131,7 +131,7 @@ function renderUserList() {
         const li = document.createElement('li');
         li.innerHTML = `
             <div onclick="selectUser('${user.id}')" style="flex-grow:1; font-weight:600; text-align: left;">
-                👤 ${user.name}
+                👤 ${user.name.toUpperCase()}
             </div>
             <div class="user-actions">
                 <button class="btn-stat" title="Ver Estatísticas" onclick="showStats('${user.id}', event)">📊</button>
@@ -145,14 +145,15 @@ function renderUserList() {
 function createNewUser() {
     applySettings();
     initAudio();
-    const name = document.getElementById('new-user-name').value.trim();
+    // Adicione o .toUpperCase() aqui
+    const name = document.getElementById('new-user-name').value.trim().toUpperCase();
     const age = document.getElementById('new-user-age').value;
 
     if (!name) { alert("Por favor, digite um nome."); return; }
 
     const newUser = {
         id: Date.now().toString(),
-        name: name,
+        name: name, // Já será salvo como maiúsculo
         age: parseInt(age) || 0,
         scores: { 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
         speed: { 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
@@ -217,19 +218,56 @@ function showStats(id, event) {
     if (!user || !user.lastSession) { alert("Este usuário ainda não completou nenhuma rodada."); return; }
 
     document.getElementById('stats-user-name').textContent = user.name;
-    const chart = document.getElementById('stats-chart');
-    chart.innerHTML = '';
+
+    // CORREÇÃO: Selecionando os elementos do DOM aqui dentro
+    const chartScore = document.getElementById('stats-chart');
+    const chartSpeed = document.getElementById('stats-speed-chart');
+
+    chartScore.innerHTML = '';
+    chartSpeed.innerHTML = '';
+
+    const maxScore = Math.max(...Object.values(user.scores), 10);
+
+    let maxTotalSpeed = 3000;
+    [4, 5, 6, 7, 8, 9].forEach(c => {
+        let sum = user.speed[c].reduce((a, b) => a + b, 0);
+        if (sum > maxTotalSpeed) maxTotalSpeed = sum;
+    });
 
     [4, 5, 6, 7, 8, 9].forEach(colors => {
+        // --- 1. Gráfico de Pontos ---
         const record = user.scores[colors];
-        const last = (user.lastSession.colors === colors) ? user.lastSession.score : 0;
+        const last = (user.lastSession && user.lastSession.colors === colors) ? user.lastSession.score : 0;
         const maxVal = Math.max(record, last, 10);
 
-        chart.innerHTML += `
-            <div class="bar-wrapper" style="width: 45px;">
-                <div style="display: flex; gap: 2px; align-items: flex-end; height: 100%;">
-                    <div class="bar-fill" style="height: ${(record/maxVal)*100}%; background: #3b82f6;" title="Recorde: ${record}"></div>
-                    <div class="bar-fill" style="height: ${(last/maxVal)*100}%; background: #94a3b8;" title="Última: ${last}"></div>
+        chartScore.innerHTML += `
+            <div class="bar-wrapper">
+                <div style="display: flex; gap: 2px; align-items: flex-end; height: 100%; width: 45px;">
+                    <div class="bar-fill-score" style="height: ${(record/maxVal)*100}%" title="Recorde: ${record}"></div>
+                    <div class="bar-fill-score" style="height: ${(last/maxVal)*100}%; background: #94a3b8;" title="Última: ${last}"></div>
+                </div>
+                <span class="bar-label">${colors}C</span>
+            </div>
+        `;
+
+        // --- 2. Gráfico de Velocidade ---
+        const reactionTimes = user.speed[colors] || [];
+        const totalLevelTime = reactionTimes.reduce((a, b) => a + b, 0);
+        const displaySpeed = totalLevelTime > 0 ? (totalLevelTime / 1000).toFixed(1) + 's' : '-';
+        const heightSpeed = totalLevelTime > 0 ? 100 : 0;
+
+        let segmentsHTML = '';
+        reactionTimes.forEach((t, index) => {
+            const segmentPct = (t / totalLevelTime) * 100;
+            const bgColor = segmentColors[index % segmentColors.length];
+            segmentsHTML += `<div class="bar-segment" style="height: ${segmentPct}%; background-color: ${bgColor};" title="Toque ${index + 1}: ${t}ms"></div>`;
+        });
+
+        chartSpeed.innerHTML += `
+            <div class="bar-wrapper">
+                <span class="bar-value" style="font-size: 9px;">${displaySpeed}</span>
+                <div class="bar-fill-container" style="height: ${heightSpeed}%">
+                    ${segmentsHTML}
                 </div>
                 <span class="bar-label">${colors}C</span>
             </div>

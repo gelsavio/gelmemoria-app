@@ -682,6 +682,29 @@ body {
 }
 
 
+/* Gráfico 1: Barras Normais (Pontos) */
+
+.bar-fill-score {
+    width: 20px;
+    background: #3b82f6;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.8s ease-out;
+}
+
+
+/* Gráfico 2: Contêiner das barras empilhadas */
+
+.chart-speed .bar-fill-container {
+    display: flex;
+    flex-direction: column;
+    width: 20px;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    border-radius: 4px 4px 0 0;
+}
+
+
 /* Animação suave para as fatias de tempo */
 
 .bar-segment {
@@ -712,4 +735,9 @@ body {
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
+}
+
+#current-player-name,
+#stats-user-name {
+    text-transform: uppercase;
 }
