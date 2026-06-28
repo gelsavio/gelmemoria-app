@@ -741,3 +741,61 @@ body {
 #stats-user-name {
     text-transform: uppercase;
 }
+
+
+/* Container de Status aprimorado */
+
+#status-message {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    /* Espaçamento vertical entre botão e tabuleiro */
+    width: 100%;
+    max-width: 300px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    background: var(--bg-glass);
+}
+
+.status-attention {
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.status-turn {
+    color: #10b981;
+    border-color: #10b981;
+}
+
+.status-idle {
+    color: var(--text-muted);
+    border-color: transparent;
+}
+
+
+/* Ajuste no container do botão para não empurrar a mensagem */
+
+.game-action {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+/* Amarelo/Laranja */
+
+.status-turn {
+    color: #10b981;
+    border: 1px solid #10b981;
+}
+
+
+/* Verde */
+
+.status-idle {
+    color: var(--text-muted);
+}

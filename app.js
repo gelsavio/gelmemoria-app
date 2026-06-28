@@ -276,6 +276,30 @@ function showStats(id, event) {
 
     document.getElementById('stats-overlay').classList.add('show');
 }
+// Função auxiliar para mudar a mensagem
+function updateStatus(text, type) {
+    const el = document.getElementById('status-message');
+    el.textContent = text;
+    el.className = 'status-' + type;
+}
+
+async function playSequence() {
+    updateStatus("Preste atenção agora!", "attention"); // MENSAGEM 1
+
+    for (let i = 0; i < sequence.length; i++) {
+        if (!isPlaying) return;
+        await new Promise(resolve => setTrackedTimeout(resolve, 150));
+        if (!isPlaying) return;
+        activatePad(sequence[i], 500);
+        await new Promise(resolve => setTrackedTimeout(resolve, 500));
+    }
+
+    if (isPlaying) {
+        updateStatus("Sua vez!", "turn"); // MENSAGEM 2
+        isAcceptingInput = true;
+        lastClickTime = Date.now();
+    }
+}
 
 function closeStats() {
     document.getElementById('stats-overlay').classList.remove('show');
@@ -340,20 +364,7 @@ function nextRound() {
     setTrackedTimeout(playSequence, 800);
 }
 
-async function playSequence() {
-    for (let i = 0; i < sequence.length; i++) {
-        if (!isPlaying) return;
-        await new Promise(resolve => setTrackedTimeout(resolve, 150));
-        if (!isPlaying) return;
-        activatePad(sequence[i], 500);
-        await new Promise(resolve => setTrackedTimeout(resolve, 500));
-    }
-    if (isPlaying) {
-        isAcceptingInput = true;
-        sessionReactionTimes = []; // Zera a captura para a nova rodada
-        lastClickTime = Date.now();
-    }
-}
+
 
 function activatePad(index, duration) {
     const pad = document.getElementById(`pad-${index}`);

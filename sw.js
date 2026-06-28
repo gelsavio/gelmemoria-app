@@ -1,4 +1,4 @@
-const CACHE_NAME = 'genius-memory-v180';
+const CACHE_NAME = 'genius-memory-v190';
 
 const ASSETS_TO_CACHE = [
     './',

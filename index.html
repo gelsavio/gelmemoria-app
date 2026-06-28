@@ -41,6 +41,8 @@
                 <div class="pad pink" id="pad-7" onclick="handlePadClick(7)" style="display:none;"></div>
                 <div class="pad lime" id="pad-8" onclick="handlePadClick(8)" style="display:none;"></div>
             </div>
+            <div id="status-message" class="status-idle">Prepare-se para começar!</div>
+
             <div class="game-action">
                 <button id="start-btn" onclick="toggleGame()">JOGAR</button>
             </div>
@@ -130,7 +132,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=1.8.0"></script>
+    <script src="app.js?v=1.9.0"></script>
     <script>
         let newWorker;
         if ('serviceWorker' in navigator) {
