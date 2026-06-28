@@ -11,17 +11,22 @@ let playerStep = 0;
 let score = 0;
 let isAcceptingInput = false;
 
+// Variáveis Neurológicas de Tempo de Reação
+let lastClickTime = 0;
+let sessionReactionTimes = [];
+let bestRoundReactionTimes = []; // Guarda os tempos exatos da última rodada de sucesso
+
+// Paleta de cores para desenhar as "fatias" do gráfico empilhado
+const segmentColors = ['#f43f5e', '#3b82f6', '#eab308', '#84cc16', '#a855f7', '#06b6d4', '#f97316', '#ec4899', '#10b981', '#6366f1'];
+
 /* =========================================================
-   SISTEMA DE ÁUDIO NATIVO (8 FREQUÊNCIAS)
+   SISTEMA DE ÁUDIO NATIVO E TEMAS
 ========================================================= */
 let audioCtx;
-// Frequências expandidas para 8 notas estáveis (Evita estalos e travamentos)
-const FREQUENCIES = [329.63, 261.63, 293.66, 392.00, 440.00, 493.88, 523.25, 587.33];
+const FREQUENCIES = [329.63, 261.63, 293.66, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25];
 
 function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-    }
+    if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
@@ -37,8 +42,6 @@ function playTone(index, duration = 400) {
 
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(FREQUENCIES[index], audioCtx.currentTime);
-
-    // Fix crucial de âncora de volume inicial para reprodução contínua
     gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
 
     oscillator.connect(gainNode);
@@ -49,15 +52,41 @@ function playTone(index, duration = 400) {
     oscillator.stop(audioCtx.currentTime + (duration / 1000));
 }
 
+function applyTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem('gapsi_theme', themeName);
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('gapsi_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const themeRadios = document.getElementsByName('themeSelect');
+    for (const r of themeRadios) {
+        if (r.value === savedTheme) r.checked = true;
+    }
+}
+
 /* =========================================================
-   GERENCIAMENTO DE USUÁRIOS E DIFICULDADE
+   GERENCIAMENTO DE USUÁRIOS E MIGRAÇÃO DE DADOS
 ========================================================= */
 let users = [];
 let currentUser = null;
 
 function loadUsers() {
     const stored = localStorage.getItem('gapsi_users');
-    if (stored) users = JSON.parse(stored);
+    if (stored) {
+        users = JSON.parse(stored);
+        users.forEach(u => {
+            if (!u.scores) u.scores = { 4: u.bestScore || 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+            if (u.scores[9] === undefined) u.scores[9] = 0;
+
+            // Migração: Como agora salvamos listas de tempos e não médias únicas,
+            // precisamos resetar se os dados antigos forem números simples.
+            if (!u.speed || typeof u.speed[4] === 'number') {
+                u.speed = { 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+            }
+        });
+    }
 }
 
 function saveUsers() {
@@ -73,10 +102,10 @@ function applySettings() {
     const board = document.getElementById('board');
     board.className = `simon-board board-${currentColorCount}`;
 
-    // Faz a varredura e gerencia exibição de até 8 pads
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 9; i++) {
         document.getElementById(`pad-${i}`).style.display = (i < currentColorCount) ? 'block' : 'none';
     }
+    updatePlayerUI();
 }
 
 function showLoginModal() {
@@ -90,18 +119,24 @@ function renderUserList() {
     const listEl = document.getElementById('user-list');
     listEl.innerHTML = '';
 
-    if (users.length === 0) {
-        listEl.innerHTML = '<li style="justify-content:center; color:#94a3b8;">Nenhum perfil cadastrado</li>';
+    // Ordenar alfabeticamente
+    const sortedUsers = [...users].sort((a, b) => a.name.localeCompare(b.name));
+
+    if (sortedUsers.length === 0) {
+        listEl.innerHTML = '<li style="justify-content:center; color: var(--text-muted);">Nenhum perfil cadastrado</li>';
         return;
     }
 
-    users.forEach(user => {
+    sortedUsers.forEach(user => {
         const li = document.createElement('li');
         li.innerHTML = `
-            <div onclick="selectUser('${user.id}')" style="flex-grow:1; font-weight:600;">
-                👤 ${user.name} <span style="color:#3b82f6; font-size:11px; margin-left:5px;">(Max: ${user.bestScore})</span>
+            <div onclick="selectUser('${user.id}')" style="flex-grow:1; font-weight:600; text-align: left;">
+                👤 ${user.name}
             </div>
-            <button class="delete-user-btn" onclick="deleteUser('${user.id}', event)">✕</button>
+            <div class="user-actions">
+                <button class="btn-stat" title="Ver Estatísticas" onclick="showStats('${user.id}', event)">📊</button>
+                <button class="delete-user-btn" title="Excluir" onclick="requestDeleteUser('${user.id}', event)">✕</button>
+            </div>
         `;
         listEl.appendChild(li);
     });
@@ -119,7 +154,8 @@ function createNewUser() {
         id: Date.now().toString(),
         name: name,
         age: parseInt(age) || 0,
-        bestScore: 0
+        scores: { 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+        speed: { 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
     };
 
     users.push(newUser);
@@ -149,27 +185,76 @@ function finalizeLogin() {
     resetGameStats();
 }
 
-function deleteUser(id, event) {
+let userToDelete = null;
+
+function requestDeleteUser(id, event) {
     event.stopPropagation();
-    if (confirm("Excluir usuário e apagar pontuações de forma definitiva?")) {
-        users = users.filter(u => u.id !== id);
+    userToDelete = id;
+    document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function closeConfirm() {
+    document.getElementById('confirm-overlay').classList.remove('show');
+    userToDelete = null;
+}
+
+function executeDelete() {
+    if (userToDelete) {
+        users = users.filter(u => u.id !== userToDelete);
         saveUsers();
         renderUserList();
-        if (currentUser && currentUser.id === id) playAnonymous();
+        if (currentUser && currentUser.id === userToDelete) playAnonymous();
     }
+    closeConfirm();
+}
+
+/* =========================================================
+   ESTATÍSTICAS (GRÁFICO DE BARRAS EMPILHADAS)
+========================================================= */
+function showStats(id, event) {
+    event.stopPropagation();
+    const user = users.find(u => u.id === id);
+    if (!user || !user.lastSession) { alert("Este usuário ainda não completou nenhuma rodada."); return; }
+
+    document.getElementById('stats-user-name').textContent = user.name;
+    const chart = document.getElementById('stats-chart');
+    chart.innerHTML = '';
+
+    [4, 5, 6, 7, 8, 9].forEach(colors => {
+        const record = user.scores[colors];
+        const last = (user.lastSession.colors === colors) ? user.lastSession.score : 0;
+        const maxVal = Math.max(record, last, 10);
+
+        chart.innerHTML += `
+            <div class="bar-wrapper" style="width: 45px;">
+                <div style="display: flex; gap: 2px; align-items: flex-end; height: 100%;">
+                    <div class="bar-fill" style="height: ${(record/maxVal)*100}%; background: #3b82f6;" title="Recorde: ${record}"></div>
+                    <div class="bar-fill" style="height: ${(last/maxVal)*100}%; background: #94a3b8;" title="Última: ${last}"></div>
+                </div>
+                <span class="bar-label">${colors}C</span>
+            </div>
+        `;
+    });
+
+    document.getElementById('stats-overlay').classList.add('show');
+}
+
+function closeStats() {
+    document.getElementById('stats-overlay').classList.remove('show');
 }
 
 function updatePlayerUI() {
     document.getElementById('current-player-name').textContent = currentUser ? currentUser.name : 'Anônimo';
-    document.getElementById('high-score').textContent = currentUser ? currentUser.bestScore : '0';
+    document.getElementById('high-score').textContent = currentUser ? currentUser.scores[currentColorCount] : '0';
 }
 
 /* =========================================================
-   NÚCLEO DINÂMICO DE JOGO (MÁQUINA DE ESTADOS)
+   NÚCLEO DO JOGO E CAPTURA DE TEMPOS DE TOQUE
 ========================================================= */
 function clearAllTimeouts() {
     gameTimeouts.forEach(clearTimeout);
     gameTimeouts = [];
+    document.querySelectorAll('.pad').forEach(pad => pad.classList.remove('active'));
 }
 
 function setTrackedTimeout(fn, delay) {
@@ -181,7 +266,10 @@ function setTrackedTimeout(fn, delay) {
 function resetGameStats() {
     sequence = [];
     score = 0;
+    sessionReactionTimes = [];
+    bestRoundReactionTimes = [];
     document.getElementById('current-score').textContent = score;
+    clearAllTimeouts();
 }
 
 function toggleGame() {
@@ -191,7 +279,6 @@ function toggleGame() {
     if (isPlaying) {
         isPlaying = false;
         isAcceptingInput = false;
-        clearAllTimeouts();
         btn.textContent = 'JOGAR';
         btn.classList.remove('stop');
         resetGameStats();
@@ -218,14 +305,16 @@ function nextRound() {
 async function playSequence() {
     for (let i = 0; i < sequence.length; i++) {
         if (!isPlaying) return;
-
         await new Promise(resolve => setTrackedTimeout(resolve, 150));
         if (!isPlaying) return;
-
         activatePad(sequence[i], 500);
         await new Promise(resolve => setTrackedTimeout(resolve, 500));
     }
-    if (isPlaying) isAcceptingInput = true;
+    if (isPlaying) {
+        isAcceptingInput = true;
+        sessionReactionTimes = []; // Zera a captura para a nova rodada
+        lastClickTime = Date.now();
+    }
 }
 
 function activatePad(index, duration) {
@@ -239,11 +328,18 @@ function activatePad(index, duration) {
 function handlePadClick(index) {
     if (!isAcceptingInput || !isPlaying) return;
 
+    // Registra o tempo do toque e reseta o cronômetro para o próximo
+    const currentTime = Date.now();
+    sessionReactionTimes.push(currentTime - lastClickTime);
+    lastClickTime = currentTime;
+
     activatePad(index, 300);
 
     if (index === sequence[playerStep]) {
         playerStep++;
         if (playerStep === sequence.length) {
+            // Se concluiu a rodada de forma correta, armazena essa lista como o "Melhor Tempo Recente"
+            bestRoundReactionTimes = [...sessionReactionTimes];
             isAcceptingInput = false;
             setTrackedTimeout(nextRound, 600);
         }
@@ -252,40 +348,58 @@ function handlePadClick(index) {
     }
 }
 
+const mensagensPositivas = [
+    "Você foi incrível! Cada jogada deixa seu cérebro mais forte.",
+    "Uau, que foco! Brincar com você é muito divertido.",
+    "A prática faz a gente crescer, que tal mais uma?",
+    "Sua memória é fantástica! Adorei ver você tentar.",
+    "Muito bem! O mais legal é que a gente sempre pode tentar outra vez.",
+    "Que jogada legal! Respire fundo e vamos para a próxima aventura!",
+    "Você prestou muita atenção, parabéns! Vamos treinar mais um pouquinho?",
+    "Adorei seu esforço! O importante é se divertir e aprender."
+];
+
 function gameOver() {
     isPlaying = false;
     isAcceptingInput = false;
-    clearAllTimeouts();
 
     const btn = document.getElementById('start-btn');
     btn.textContent = 'JOGAR';
     btn.classList.remove('stop');
 
     if (isSoundEnabled) {
-        // Um som mais suave para não assustar (mantém o tom, mas mais curto e menos grave)
         isSoundEnabled = false;
-        playTone(2, 600); // Tom amarelo, mais amigável que o vermelho longo
+        playTone(2, 600);
         setTimeout(() => { isSoundEnabled = true; }, 800);
     }
 
-    if (currentUser && score > currentUser.bestScore) {
-        currentUser.bestScore = score;
+    if (currentUser) {
+        // Guarda a última sessão (mesmo com erro)
+        currentUser.lastSession = {
+            colors: currentColorCount,
+            score: score,
+            speed: [...sessionReactionTimes]
+        };
+
+        // Atualiza recorde se superado
+        if (score > currentUser.scores[currentColorCount]) {
+            currentUser.scores[currentColorCount] = score;
+            currentUser.speed[currentColorCount] = [...bestRoundReactionTimes];
+        }
         saveUsers();
         updatePlayerUI();
     }
 
-    // Sorteia uma frase aleatória da lista
     const fraseSorteada = mensagensPositivas[Math.floor(Math.random() * mensagensPositivas.length)];
-
-    // Pluraliza a palavra "ponto" corretamente (1 ponto, 2 pontos)
     const textoPonto = score === 1 ? 'ponto' : 'pontos';
 
-    // Mensagem lúdica e encorajadora com espaçamento corrigido
     document.getElementById('gameover-msg').innerHTML =
         `<span style="font-size: 55px; display: inline-block; margin-bottom: 10px; animation: bounce 2s infinite;">🌟</span><br>
-        <strong style="font-size: 16px; color: #f8fafc;">${fraseSorteada}</strong><br><br>
-        <div style="color: #94a3b8; font-size: 14px; margin-bottom: 25px;">Você conseguiu <strong style="color: #3b82f6; font-size: 18px;">${score}</strong> ${textoPonto} nesta rodada!</div>`;
+        <strong style="font-size: 16px;">${fraseSorteada}</strong><br><br>
+        <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">Você conseguiu <strong style="color: #3b82f6; font-size: 18px;">${score}</strong> ${textoPonto} nesta rodada!</div>`;
+
     document.getElementById('gameover-overlay').classList.add('show');
+    clearAllTimeouts();
 }
 
 function closeGameOver() {
@@ -294,33 +408,7 @@ function closeGameOver() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    loadTheme();
     loadUsers();
     showLoginModal();
 });
-
-
-/* =========================================================
-   MENSAGENS TERAPÊUTICAS DE REFORÇO POSITIVO
-========================================================= */
-const mensagensPositivas = [
-    "Você foi incrível! Cada jogada deixa seu cérebro mais forte. Vamos de novo?",
-    "Uau, que foco! Brincar com você é muito divertido.",
-    "Foi por muito pouco! A prática faz a gente crescer, que tal mais uma?",
-    "Sua memória é fantástica! Adorei ver você tentar.",
-    "Muito bem! O mais legal é que a gente sempre pode tentar outra vez.",
-    "Que jogada legal! Respire fundo e vamos para a próxima aventura!",
-    "Você prestou muita atenção, parabéns! Vamos treinar mais um pouquinho?",
-    "Adorei seu esforço! O importante é se divertir e aprender.",
-    "Você está indo super bem! Cada tentativa é um passo para frente.",
-    "Estou muito orgulhoso(a) de como você jogou. Vamos continuar brincando?",
-    "Que percepção rápida! Jogar com você é sempre uma surpresa boa.",
-    "Foi quase lá! O nosso cérebro adora esses desafios para ficar mais inteligente.",
-    "Você brilhou! Lembre-se: o mais divertido é continuar tentando.",
-    "Excelente trabalho! Toda vez que você joga, sua mente fica mais ágil.",
-    "Que memória boa! Vamos ver até onde chegamos na próxima vez?",
-    "Você se concentrou muito, parabéns! Preparado(a) para mais uma rodada?",
-    "Amei ver como você é persistente. Essa é uma atitude muito legal!",
-    "Puxa, que desempenho bacana! Cada partida é uma nova chance de se divertir.",
-    "Você é muito inteligente! Gosto muito de ver como você pensa.",
-    "Incrível! Respirou, focou e jogou super bem. Vamos fazer isso de novo?"
-];

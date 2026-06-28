@@ -1,7 +1,7 @@
 {
-    "short_name": "Genius",
-    "name": "Genius - Jogo de Memória",
-    "version": "1.2.0",
+    "short_name": "Memoria",
+    "name": "Gabriela Accioly - Psi - Memoria",
+    "version": "1.7.0",
     "icons": [{
         "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Simon_Electronic_Game.jpg/192px-Simon_Electronic_Game.jpg",
         "sizes": "192x192",

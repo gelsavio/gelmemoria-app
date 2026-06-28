@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gabriela Accioly Psi - Memória</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.5.0">
 </head>
 
 <body>
@@ -39,6 +39,7 @@
                 <div class="pad purple" id="pad-5" onclick="handlePadClick(5)" style="display:none;"></div>
                 <div class="pad cyan" id="pad-6" onclick="handlePadClick(6)" style="display:none;"></div>
                 <div class="pad pink" id="pad-7" onclick="handlePadClick(7)" style="display:none;"></div>
+                <div class="pad lime" id="pad-8" onclick="handlePadClick(8)" style="display:none;"></div>
             </div>
             <div class="game-action">
                 <button id="start-btn" onclick="toggleGame()">JOGAR</button>
@@ -46,19 +47,27 @@
         </div>
     </div>
 
+    <!-- Modal Inicial de Configurações e Jogadores -->
     <div id="login-overlay" class="modal-overlay show">
         <div class="modal-box">
             <h2>Configurações do Jogo</h2>
 
             <div class="settings-group">
-                <h3>Quantidade de Cores:</h3>
-                <div class="color-radios">
-                    <label><input type="radio" name="colorCount" value="4" checked> 4 </label>
-                    <label><input type="radio" name="colorCount" value="5"> 5 </label>
-                    <label><input type="radio" name="colorCount" value="6"> 6 </label>
+                <h3>Tema Visual:</h3>
+                <div class="color-radios" style="margin-bottom: 12px;">
+                    <label><input type="radio" name="themeSelect" value="dark" checked onchange="applyTheme(this.value)"> Escuro</label>
+                    <label><input type="radio" name="themeSelect" value="neutral" onchange="applyTheme(this.value)"> Neutro</label>
+                    <label><input type="radio" name="themeSelect" value="light" onchange="applyTheme(this.value)"> Claro</label>
+                </div>
 
-                    <label><input type="radio" name="colorCount" value="7"> 7 </label>
-                    <label><input type="radio" name="colorCount" value="8"> 8 </label>
+                <h3 style="border-top: 1px solid var(--border-color); padding-top: 12px;">Quantidade de Cores:</h3>
+                <div class="color-radios">
+                    <label><input type="radio" name="colorCount" value="4" checked onchange="applySettings()"> 4 </label>
+                    <label><input type="radio" name="colorCount" value="5" onchange="applySettings()"> 5 </label>
+                    <label><input type="radio" name="colorCount" value="6" onchange="applySettings()"> 6 </label>
+                    <label><input type="radio" name="colorCount" value="7" onchange="applySettings()"> 7 </label>
+                    <label><input type="radio" name="colorCount" value="8" onchange="applySettings()"> 8 </label>
+                    <label><input type="radio" name="colorCount" value="9" onchange="applySettings()"> 9 </label>
                 </div>
             </div>
 
@@ -80,15 +89,48 @@
         </div>
     </div>
 
+    <!-- Modal de Estatísticas (DUPLO GRÁFICO) -->
+    <div id="stats-overlay" class="modal-overlay">
+        <div class="modal-box" style="max-width: 450px;">
+            <h2>Estatísticas</h2>
+            <h3 id="stats-user-name" style="text-align:center; font-size: 16px; margin-bottom: 20px;"></h3>
+
+            <div style="text-align: left; margin-bottom: 5px; font-size: 13px; color: var(--text-muted); font-weight: bold;">
+                🏆 Recorde Máximo (Pontos)
+            </div>
+            <div id="stats-chart" class="chart-container"></div>
+
+            <div style="text-align: left; margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: var(--text-muted); font-weight: bold;">
+                ⏱️ Velocidade Cognitiva (Média Seg/Toque)
+            </div>
+            <div id="stats-speed-chart" class="chart-container chart-speed"></div>
+
+            <button class="btn-modal btn-no" style="margin-top:20px;" onclick="closeStats()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div id="confirm-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <h2>Atenção</h2>
+            <p style="font-size: 14px; margin-bottom: 20px;">Deseja realmente excluir este perfil? Todo o histórico de evolução será perdido.</p>
+            <div class="btn-group">
+                <button class="btn-modal btn-yes" style="background: #f43f5e; color: white;" onclick="executeDelete()">Sim, excluir</button>
+                <button class="btn-modal btn-no" onclick="closeConfirm()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Fim de Rodada -->
     <div id="gameover-overlay" class="modal-overlay">
         <div class="modal-box">
             <h2>Fim da Rodada!</h2>
             <p id="gameover-msg"></p>
-            <button class="btn-modal btn-yes" onclick="closeGameOver()">Tentar Novamente</button>
+            <button class="btn-modal btn-yes" style="background: #3b82f6; color: white;" onclick="closeGameOver()">Tentar Novamente</button>
         </div>
     </div>
 
-    <script src="app.js?v=1.2.0"></script>
+    <script src="app.js?v=1.7.0"></script>
     <script>
         let newWorker;
         if ('serviceWorker' in navigator) {
