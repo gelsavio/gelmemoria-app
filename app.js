@@ -262,9 +262,10 @@ function gameOver() {
     btn.classList.remove('stop');
 
     if (isSoundEnabled) {
+        // Um som mais suave para não assustar (mantém o tom, mas mais curto e menos grave)
         isSoundEnabled = false;
-        playTone(1, 1000);
-        setTimeout(() => { isSoundEnabled = true; }, 1000);
+        playTone(2, 600); // Tom amarelo, mais amigável que o vermelho longo
+        setTimeout(() => { isSoundEnabled = true; }, 800);
     }
 
     if (currentUser && score > currentUser.bestScore) {
@@ -273,9 +274,17 @@ function gameOver() {
         updatePlayerUI();
     }
 
-    // Mensagem transparente e clara explicitando o erro do jogador
+    // Sorteia uma frase aleatória da lista
+    const fraseSorteada = mensagensPositivas[Math.floor(Math.random() * mensagensPositivas.length)];
+
+    // Pluraliza a palavra "ponto" corretamente (1 ponto, 2 pontos)
+    const textoPonto = score === 1 ? 'ponto' : 'pontos';
+
+    // Mensagem lúdica e encorajadora com espaçamento corrigido
     document.getElementById('gameover-msg').innerHTML =
-        `<span style="font-size: 40px;">❌</span><br><br><strong>Você errou a sequência de cores!</strong><br><br>O teste de memória foi encerrado.<br>Sua pontuação final nesta rodada: <strong>${score}</strong> acertos.`;
+        `<span style="font-size: 55px; display: inline-block; margin-bottom: 10px; animation: bounce 2s infinite;">🌟</span><br>
+        <strong style="font-size: 16px; color: #f8fafc;">${fraseSorteada}</strong><br><br>
+        <div style="color: #94a3b8; font-size: 14px; margin-bottom: 25px;">Você conseguiu <strong style="color: #3b82f6; font-size: 18px;">${score}</strong> ${textoPonto} nesta rodada!</div>`;
     document.getElementById('gameover-overlay').classList.add('show');
 }
 
@@ -288,3 +297,30 @@ window.addEventListener('DOMContentLoaded', () => {
     loadUsers();
     showLoginModal();
 });
+
+
+/* =========================================================
+   MENSAGENS TERAPÊUTICAS DE REFORÇO POSITIVO
+========================================================= */
+const mensagensPositivas = [
+    "Você foi incrível! Cada jogada deixa seu cérebro mais forte. Vamos de novo?",
+    "Uau, que foco! Brincar com você é muito divertido.",
+    "Foi por muito pouco! A prática faz a gente crescer, que tal mais uma?",
+    "Sua memória é fantástica! Adorei ver você tentar.",
+    "Muito bem! O mais legal é que a gente sempre pode tentar outra vez.",
+    "Que jogada legal! Respire fundo e vamos para a próxima aventura!",
+    "Você prestou muita atenção, parabéns! Vamos treinar mais um pouquinho?",
+    "Adorei seu esforço! O importante é se divertir e aprender.",
+    "Você está indo super bem! Cada tentativa é um passo para frente.",
+    "Estou muito orgulhoso(a) de como você jogou. Vamos continuar brincando?",
+    "Que percepção rápida! Jogar com você é sempre uma surpresa boa.",
+    "Foi quase lá! O nosso cérebro adora esses desafios para ficar mais inteligente.",
+    "Você brilhou! Lembre-se: o mais divertido é continuar tentando.",
+    "Excelente trabalho! Toda vez que você joga, sua mente fica mais ágil.",
+    "Que memória boa! Vamos ver até onde chegamos na próxima vez?",
+    "Você se concentrou muito, parabéns! Preparado(a) para mais uma rodada?",
+    "Amei ver como você é persistente. Essa é uma atitude muito legal!",
+    "Puxa, que desempenho bacana! Cada partida é uma nova chance de se divertir.",
+    "Você é muito inteligente! Gosto muito de ver como você pensa.",
+    "Incrível! Respirou, focou e jogou super bem. Vamos fazer isso de novo?"
+];

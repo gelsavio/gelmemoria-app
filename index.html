@@ -51,15 +51,14 @@
             <h2>Configurações do Jogo</h2>
 
             <div class="settings-group">
-                <h3>Formato do Tabuleiro / Cores:</h3>
+                <h3>Quantidade de Cores:</h3>
                 <div class="color-radios">
-                    <label><input type="radio" name="colorCount" value="4" checked> 4 (Losango)</label>
-                    <label><input type="radio" name="colorCount" value="5"> 5 (Pentágono)</label>
-                    <label><input type="radio" name="colorCount" value="6"> 6 (Hexágono)</label>
-                </div>
-                <div class="color-radios" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-                    <label><input type="radio" name="colorCount" value="7"> 7 Cores</label>
-                    <label><input type="radio" name="colorCount" value="8"> 8 Cores</label>
+                    <label><input type="radio" name="colorCount" value="4" checked> 4 </label>
+                    <label><input type="radio" name="colorCount" value="5"> 5 </label>
+                    <label><input type="radio" name="colorCount" value="6"> 6 </label>
+
+                    <label><input type="radio" name="colorCount" value="7"> 7 </label>
+                    <label><input type="radio" name="colorCount" value="8"> 8 </label>
                 </div>
             </div>
 
@@ -83,7 +82,7 @@
 
     <div id="gameover-overlay" class="modal-overlay">
         <div class="modal-box">
-            <h2>Fim de Jogo!</h2>
+            <h2>Fim da Rodada!</h2>
             <p id="gameover-msg"></p>
             <button class="btn-modal btn-yes" onclick="closeGameOver()">Tentar Novamente</button>
         </div>
