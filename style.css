@@ -89,7 +89,7 @@ body {
     border: 1px solid var(--border-color);
     padding: 15px;
     border-radius: 16px;
-    margin-bottom: 40px;
+    margin-bottom: 15px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
@@ -756,7 +756,7 @@ body {
     height: 60px;
     margin-top: -30px;
     margin-left: -30px;
-    background-image: url('icon-192x192.png');
+    background-image: url('icons/icon-192x192.png');
     background-size: contain;
     background-repeat: no-repeat;
     z-index: 15;
@@ -765,22 +765,17 @@ body {
 }
 
 #status-message {
-    height: 40px;
-    /* Altura fixa para não "pular" o layout */
-    display: flex;
-    align-items: center;
-    justify-content: center;
     text-align: center;
     font-weight: bold;
-    font-size: 1.1rem;
-    padding: 12px 20px;
-    border-radius: 12px;
-    margin: 20px 0;
-    /* Espaçamento vertical entre botão e tabuleiro */
+    font-size: 1rem;
+    padding: 8px 16px;
+    border-radius: 8px;
+    margin: 0 0 15px 0;
+    /* Remove margem superior, mantendo o respiro abaixo */
     width: 100%;
     max-width: 300px;
     transition: all 0.3s ease;
-    border: 2px solid transparent;
+    border: 1px solid transparent;
     background: var(--bg-glass);
 }
 
@@ -822,4 +817,17 @@ body {
 
 .status-idle {
     color: var(--text-muted);
+}
+
+
+/* Adicione um espaço no título das estatísticas */
+
+.modal-box h3 {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 15px 0 8px 0;
+    /* Aumentado o topo para separar */
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }

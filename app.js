@@ -215,11 +215,10 @@ function executeDelete() {
 function showStats(id, event) {
     event.stopPropagation();
     const user = users.find(u => u.id === id);
-    if (!user || !user.lastSession) { alert("Este usuário ainda não completou nenhuma rodada."); return; }
+    if (!user) return;
 
     document.getElementById('stats-user-name').textContent = user.name;
 
-    // CORREÇÃO: Selecionando os elementos do DOM aqui dentro
     const chartScore = document.getElementById('stats-chart');
     const chartSpeed = document.getElementById('stats-speed-chart');
 
@@ -228,45 +227,39 @@ function showStats(id, event) {
 
     const maxScore = Math.max(...Object.values(user.scores), 10);
 
-    let maxTotalSpeed = 3000;
-    [4, 5, 6, 7, 8, 9].forEach(c => {
-        let sum = user.speed[c].reduce((a, b) => a + b, 0);
-        if (sum > maxTotalSpeed) maxTotalSpeed = sum;
-    });
-
     [4, 5, 6, 7, 8, 9].forEach(colors => {
-        // --- 1. Gráfico de Pontos ---
+        // --- Gráfico de Pontos ---
         const record = user.scores[colors];
         const last = (user.lastSession && user.lastSession.colors === colors) ? user.lastSession.score : 0;
         const maxVal = Math.max(record, last, 10);
 
         chartScore.innerHTML += `
             <div class="bar-wrapper">
-                <div style="display: flex; gap: 2px; align-items: flex-end; height: 100%; width: 45px;">
-                    <div class="bar-fill-score" style="height: ${(record/maxVal)*100}%" title="Recorde: ${record}"></div>
+                <span class="bar-value" style="font-size: 10px; margin-bottom: 2px;">${record > 0 ? record : ''}</span>
+                <div style="display: flex; gap: 2px; align-items: flex-end; height: 60px;">
+                    <div class="bar-fill-score" style="height: ${(record/maxVal)*100}%" title="Melhor: ${record}"></div>
                     <div class="bar-fill-score" style="height: ${(last/maxVal)*100}%; background: #94a3b8;" title="Última: ${last}"></div>
                 </div>
                 <span class="bar-label">${colors}C</span>
             </div>
         `;
 
-        // --- 2. Gráfico de Velocidade ---
+        // --- Gráfico de Velocidade (Intervalos Positivos) ---
         const reactionTimes = user.speed[colors] || [];
         const totalLevelTime = reactionTimes.reduce((a, b) => a + b, 0);
         const displaySpeed = totalLevelTime > 0 ? (totalLevelTime / 1000).toFixed(1) + 's' : '-';
-        const heightSpeed = totalLevelTime > 0 ? 100 : 0;
 
         let segmentsHTML = '';
         reactionTimes.forEach((t, index) => {
-            const segmentPct = (t / totalLevelTime) * 100;
+            const segmentPct = totalLevelTime > 0 ? (t / totalLevelTime) * 100 : 0;
             const bgColor = segmentColors[index % segmentColors.length];
-            segmentsHTML += `<div class="bar-segment" style="height: ${segmentPct}%; background-color: ${bgColor};" title="Toque ${index + 1}: ${t}ms"></div>`;
+            segmentsHTML += `<div class="bar-segment" style="height: ${segmentPct}%; background-color: ${bgColor};" title="Intervalo ${index + 1}: ${(t/1000).toFixed(2)}s"></div>`;
         });
 
         chartSpeed.innerHTML += `
             <div class="bar-wrapper">
                 <span class="bar-value" style="font-size: 9px;">${displaySpeed}</span>
-                <div class="bar-fill-container" style="height: ${heightSpeed}%">
+                <div class="bar-fill-container" style="height: ${totalLevelTime > 0 ? 100 : 0}%">
                     ${segmentsHTML}
                 </div>
                 <span class="bar-label">${colors}C</span>
@@ -276,6 +269,7 @@ function showStats(id, event) {
 
     document.getElementById('stats-overlay').classList.add('show');
 }
+
 // Função auxiliar para mudar a mensagem
 function updateStatus(text, type) {
     const el = document.getElementById('status-message');
@@ -355,6 +349,8 @@ function toggleGame() {
     }
 }
 
+let roundStartTime = 0;
+
 function nextRound() {
     if (!isPlaying) return;
     score = sequence.length;
@@ -362,6 +358,8 @@ function nextRound() {
     playerStep = 0;
     isAcceptingInput = false;
 
+    roundStartTime = performance.now();
+    sessionReactionTimes = []; // Reinicia os tempos de reação para a nova rodada
     sequence.push(Math.floor(Math.random() * currentColorCount));
     setTrackedTimeout(playSequence, 800);
 }
@@ -379,18 +377,24 @@ function activatePad(index, duration) {
 function handlePadClick(index) {
     if (!isAcceptingInput || !isPlaying) return;
 
-    // Registra o tempo do toque e reseta o cronômetro para o próximo
-    const currentTime = Date.now();
-    sessionReactionTimes.push(currentTime - lastClickTime);
-    lastClickTime = currentTime;
+    const now = performance.now();
 
+    // Se houver um clique anterior, calculamos o intervalo (Delta)
+    if (lastClickTime > 0) {
+        const deltaTime = now - lastClickTime;
+        sessionReactionTimes.push(deltaTime);
+    }
+
+    // Atualiza o marcador do último clique
+    lastClickTime = now;
+
+    // Feedback visual e sonoro
     activatePad(index, 300);
 
+    // Lógica do Jogo
     if (index === sequence[playerStep]) {
         playerStep++;
         if (playerStep === sequence.length) {
-            // Se concluiu a rodada de forma correta, armazena essa lista como o "Melhor Tempo Recente"
-            bestRoundReactionTimes = [...sessionReactionTimes];
             isAcceptingInput = false;
             setTrackedTimeout(nextRound, 600);
         }
@@ -414,10 +418,12 @@ function gameOver() {
     isPlaying = false;
     isAcceptingInput = false;
 
+    // Atualiza o botão da interface para o estado inicial
     const btn = document.getElementById('start-btn');
     btn.textContent = 'JOGAR';
     btn.classList.remove('stop');
 
+    // Feedback sonoro de erro (opcional)
     if (isSoundEnabled) {
         isSoundEnabled = false;
         playTone(2, 600);
@@ -425,25 +431,25 @@ function gameOver() {
     }
 
     if (currentUser) {
-        // Ao invés de usar bestRoundReactionTimes, usamos a sessão atual limitada ao score real
-        // Isso garante que se o jogador errou no passo 4, ele só guarde 4 tempos
-        const validSessionTimes = sessionReactionTimes.slice(0, score);
-
+        // Guarda a sessão finalizada (a pontuação e os tempos absolutos)
         currentUser.lastSession = {
             colors: currentColorCount,
             score: score,
-            speed: validSessionTimes
+            speed: [...sessionReactionTimes] // Salva os timestamps exatos
         };
 
-        // Atualiza recorde se superado
+        // Atualiza recorde de pontos se superado
         if (score > currentUser.scores[currentColorCount]) {
             currentUser.scores[currentColorCount] = score;
-            currentUser.speed[currentColorCount] = [...bestRoundReactionTimes];
+            // Atualiza o histórico de velocidade do nível com os novos tempos absolutos
+            currentUser.speed[currentColorCount] = [...sessionReactionTimes];
         }
+
         saveUsers();
         updatePlayerUI();
     }
 
+    // Exibe a mensagem de feedback para a criança
     const fraseSorteada = mensagensPositivas[Math.floor(Math.random() * mensagensPositivas.length)];
     const textoPonto = score === 1 ? 'ponto' : 'pontos';
 
@@ -453,6 +459,8 @@ function gameOver() {
         <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">Você conseguiu <strong style="color: #3b82f6; font-size: 18px;">${score}</strong> ${textoPonto} nesta rodada!</div>`;
 
     document.getElementById('gameover-overlay').classList.add('show');
+
+    // Limpa todos os timeouts ativos para evitar conflitos na próxima rodada
     clearAllTimeouts();
 }
 
