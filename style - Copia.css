@@ -664,63 +664,25 @@ body {
 }
 
 
-/* Gráfico 2: Velocidade — container principal vira coluna de grupos */
+/* Gráfico 2: Barras Empilhadas (Velocidade Cognitiva) */
 
-.chart-speed {
+.chart-speed .bar-fill {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    height: auto;
-    /* sem altura fixa — cresce com o conteúdo */
-    min-height: 0;
-    gap: 6px;
-    padding: 10px;
+    /* Permite empilhar os blocos */
+    background: transparent;
+    box-shadow: none;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+    /* Corta os cantos das fatias nas extremidades */
+}
+
+.chart-speed .bar-value {
+    font-size: 9px;
 }
 
 
-/* Um grupo por nível de cores (ex: "4C") */
-
-.stats-speed-group {
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-}
-
-
-/* Rótulo do nível (4C, 5C …) à esquerda */
-
-.stats-speed-label {
-    font-size: 10px;
-    font-weight: bold;
-    color: var(--text-muted);
-    width: 20px;
-    text-align: right;
-    flex-shrink: 0;
-    padding-bottom: 14px;
-    /* alinha com as barras */
-}
-
-
-/* Fila de 6 barras (🏆 + 5 últimas) */
-
-.stats-speed-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 60px;
-    flex: 1;
-}
-
-.stats-speed-bars .bar-wrapper {
-    height: 100%;
-    justify-content: flex-end;
-}
-
-.stats-speed-bars .bar-fill-container {
-    width: 100%;
-}
-
-
-/* Gráfico 1: Barras de pontuação */
+/* Gráfico 1: Barras Normais (Pontos) */
 
 .bar-fill-score {
     width: 20px;
@@ -730,25 +692,49 @@ body {
 }
 
 
-/* Contêiner das barras empilhadas de velocidade */
+/* Gráfico 2: Contêiner das barras empilhadas */
 
-.bar-fill-container {
+.chart-speed .bar-fill-container {
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: 20px;
+    height: 100%;
     background: transparent;
     overflow: hidden;
     border-radius: 4px 4px 0 0;
 }
 
 
-/* Fatias de tempo */
+/* Animação suave para as fatias de tempo */
 
 .bar-segment {
     width: 100%;
     transition: height 0.8s ease-out;
+}
+
+.user-actions {
     display: flex;
     gap: 6px;
+}
+
+.btn-stat {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid #3b82f6;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.delete-user-btn {
+    background: rgba(244, 63, 94, 0.2);
+    border: 1px solid #f43f5e;
+    color: #f43f5e;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
 }
 
 #current-player-name,
@@ -774,6 +760,7 @@ body {
     background-size: contain;
     background-repeat: no-repeat;
     z-index: 15;
+    /* Acima do furo do tabuleiro */
     pointer-events: none;
 }
 
@@ -843,55 +830,4 @@ body {
     text-align: left;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}
-
-.user-actions {
-    display: flex;
-    flex-direction: row;
-    /* Coloca lado a lado */
-    gap: 8px;
-    /* Espaço entre o botão de estatísticas e o de excluir */
-    align-items: center;
-}
-
-
-/* Garante que os botões tenham um tamanho consistente */
-
-.btn-stat,
-.delete-user-btn {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-
-/* Container que agrupa todos os níveis (4C a 9C) */
-
-#stats-speed-chart {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    /* Duas colunas */
-    gap: 15px;
-    /* Espaço entre os blocos */
-    margin-top: 10px;
-}
-
-
-/* Cada grupo (ex: 4C) dentro do grid */
-
-.stats-speed-group {
-    background: var(--bg-glass);
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-}
-
-
-/* Reduzir a altura das barras para não ocupar tanto espaço vertical */
-
-.stats-speed-bars {
-    height: 40px;
-    /* Reduzido de 60px para 40px */
 }

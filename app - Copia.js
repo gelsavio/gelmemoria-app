@@ -11,9 +11,10 @@ let playerStep = 0;
 let score = 0;
 let isAcceptingInput = false;
 
-// Variáveis de Tempo de Reação
+// Variáveis Neurológicas de Tempo de Reação
 let lastClickTime = 0;
 let sessionReactionTimes = [];
+let bestRoundReactionTimes = []; // Guarda os tempos exatos da última rodada de sucesso
 
 // Paleta de cores para desenhar as "fatias" do gráfico empilhado
 const segmentColors = ['#f43f5e', '#3b82f6', '#eab308', '#84cc16', '#a855f7', '#06b6d4', '#f97316', '#ec4899', '#10b981', '#6366f1'];
@@ -79,16 +80,11 @@ function loadUsers() {
             if (!u.scores) u.scores = { 4: u.bestScore || 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
             if (u.scores[9] === undefined) u.scores[9] = 0;
 
-            // Migração: garante formato array-de-arrays (histórico de rodadas).
-            // Reseta se: speed não existe, ou se speed[4] é um número (formato v1),
-            // ou se speed[4] é um array plano de números (formato v2 — uma única rodada).
-            const sp = u.speed;
-            if (!sp || typeof sp[4] === 'number' ||
-                (Array.isArray(sp[4]) && sp[4].length > 0 && typeof sp[4][0] === 'number')) {
+            // Migração: Como agora salvamos listas de tempos e não médias únicas,
+            // precisamos resetar se os dados antigos forem números simples.
+            if (!u.speed || typeof u.speed[4] === 'number') {
                 u.speed = { 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
             }
-            // Garante que todas as chaves existam (migração de versões intermediárias)
-            [4, 5, 6, 7, 8, 9].forEach(k => { if (!Array.isArray(u.speed[k])) u.speed[k] = []; });
         });
     }
 }
@@ -232,90 +228,43 @@ function showStats(id, event) {
     const maxScore = Math.max(...Object.values(user.scores), 10);
 
     [4, 5, 6, 7, 8, 9].forEach(colors => {
-        // --- 1. Gráfico de Pontos ---
+        // --- Gráfico de Pontos ---
         const record = user.scores[colors];
+        const last = (user.lastSession && user.lastSession.colors === colors) ? user.lastSession.score : 0;
+        const maxVal = Math.max(record, last, 10);
+
         chartScore.innerHTML += `
             <div class="bar-wrapper">
                 <span class="bar-value" style="font-size: 10px; margin-bottom: 2px;">${record > 0 ? record : ''}</span>
                 <div style="display: flex; gap: 2px; align-items: flex-end; height: 60px;">
-                    <div class="bar-fill-score" style="height: ${(record / maxScore) * 100}%" title="Melhor: ${record}"></div>
+                    <div class="bar-fill-score" style="height: ${(record/maxVal)*100}%" title="Melhor: ${record}"></div>
+                    <div class="bar-fill-score" style="height: ${(last/maxVal)*100}%; background: #94a3b8;" title="Última: ${last}"></div>
                 </div>
                 <span class="bar-label">${colors}C</span>
             </div>
         `;
 
-        // --- 2. Gráfico de Velocidade (Histórico) ---
-        const history = user.speed[colors] || []; // Agora é um array de arrays
+        // --- Gráfico de Velocidade (Intervalos Positivos) ---
+        const reactionTimes = user.speed[colors] || [];
+        const totalLevelTime = reactionTimes.reduce((a, b) => a + b, 0);
+        const displaySpeed = totalLevelTime > 0 ? (totalLevelTime / 1000).toFixed(1) + 's' : '-';
 
-        // Identifica a melhor rodada (a que tem o menor tempo total acumulado)
-        let bestRound = null;
-        let bestTotal = Infinity;
-        history.forEach(round => {
-            const total = round.reduce((a, b) => a + b, 0);
-            if (total > 0 && total < bestTotal) {
-                bestTotal = total;
-                bestRound = round;
-            }
+        let segmentsHTML = '';
+        reactionTimes.forEach((t, index) => {
+            const segmentPct = totalLevelTime > 0 ? (t / totalLevelTime) * 100 : 0;
+            const bgColor = segmentColors[index % segmentColors.length];
+            segmentsHTML += `<div class="bar-segment" style="height: ${segmentPct}%; background-color: ${bgColor};" title="Intervalo ${index + 1}: ${(t/1000).toFixed(2)}s"></div>`;
         });
 
-        // Pega as últimas 5 rodadas para o histórico
-        const last5 = history.slice(-5);
-
-        // Calcula escala máxima para normalizar a altura das barras
-        const allToDisplay = bestRound ? [bestRound, ...last5] : last5;
-        const maxTotal = allToDisplay.reduce((max, r) => {
-            const t = r.reduce((a, b) => a + b, 0);
-            return t > max ? t : max;
-        }, 1);
-
-        // Função interna para montar cada barra vertical
-        function buildBar(round, label, isBest) {
-            const total = round.reduce((a, b) => a + b, 0);
-            const heightPct = (total / maxTotal) * 100;
-            const displayTime = (total / 1000).toFixed(1) + 's';
-            let segmentsHTML = '';
-
-            round.forEach((t, i) => {
-                const pct = (t / total) * 100;
-                // A melhor rodada ganha destaque em dourado/âmbar
-                const color = isBest ? '#f59e0b' : segmentColors[i % segmentColors.length];
-                segmentsHTML += `<div class="bar-segment" style="height:${pct}%;background:${color};" title="Toque ${i + 1}: ${(t / 1000).toFixed(2)}s"></div>`;
-            });
-
-            return `
-                <div class="bar-wrapper" style="width:22px;">
-                    <span class="bar-value" style="font-size:8px;">${total > 0 ? displayTime : ''}</span>
-                    <div class="bar-fill-container" style="height:${heightPct}%">${segmentsHTML}</div>
-                    <span class="bar-label" style="font-size:8px;">${label}</span>
-                </div>`;
-        }
-
-        // Monta o layout de barras do nível
-        let barsHTML = '';
-        if (bestRound) barsHTML += buildBar(bestRound, '🏆', true);
-        last5.forEach((round, i) => {
-            barsHTML += buildBar(round, `${i + 1}ª`, false);
-        });
-
-        // Preenchimento de slots vazios (até completar 6 slots: 1 Best + 5 Lasts)
-        const totalSlots = 6;
-        const filledSlots = (bestRound ? 1 : 0) + last5.length;
-        for (let i = filledSlots; i < totalSlots; i++) {
-            barsHTML += `
-                <div class="bar-wrapper" style="width:22px;">
-                    <span class="bar-value"></span>
-                    <div class="bar-fill-container" style="height:0%"></div>
-                    <span class="bar-label" style="font-size:8px; color: var(--border-color);">—</span>
-                </div>`;
-        }
-
-        // O ajuste no showStats (na parte de chartSpeed.innerHTML)
         chartSpeed.innerHTML += `
-    <div class="stats-speed-group">
-        <span class="stats-speed-label" style="display:block; margin-bottom:5px;">${colors}C</span>
-        <div class="stats-speed-bars">${barsHTML}</div>
-    </div>
-`;
+            <div class="bar-wrapper">
+                <span class="bar-value" style="font-size: 9px;">${displaySpeed}</span>
+                <div class="bar-fill-container" style="height: ${totalLevelTime > 0 ? 100 : 0}%">
+                    ${segmentsHTML}
+                </div>
+                <span class="bar-label">${colors}C</span>
+            </div>
+        `;
     });
 
     document.getElementById('stats-overlay').classList.add('show');
@@ -342,7 +291,7 @@ async function playSequence() {
     if (isPlaying) {
         updateStatus("Sua vez!", "turn"); // MENSAGEM 2
         isAcceptingInput = true;
-        lastClickTime = performance.now();
+        lastClickTime = Date.now();
     }
 }
 
@@ -400,6 +349,8 @@ function toggleGame() {
     }
 }
 
+let roundStartTime = 0;
+
 function nextRound() {
     if (!isPlaying) return;
     score = sequence.length;
@@ -407,8 +358,8 @@ function nextRound() {
     playerStep = 0;
     isAcceptingInput = false;
 
+    roundStartTime = performance.now();
     sessionReactionTimes = []; // Reinicia os tempos de reação para a nova rodada
-    lastClickTime = 0; // Zera para não herdar o tempo do clique anterior
     sequence.push(Math.floor(Math.random() * currentColorCount));
     setTrackedTimeout(playSequence, 800);
 }
@@ -480,17 +431,18 @@ function gameOver() {
     }
 
     if (currentUser) {
-        const times = [...sessionReactionTimes];
-
-        // Adiciona a rodada ao histórico e limita a 5 entradas
-        currentUser.speed[currentColorCount].push(times);
-        if (currentUser.speed[currentColorCount].length > 5) {
-            currentUser.speed[currentColorCount].shift();
-        }
+        // Guarda a sessão finalizada (a pontuação e os tempos absolutos)
+        currentUser.lastSession = {
+            colors: currentColorCount,
+            score: score,
+            speed: [...sessionReactionTimes] // Salva os timestamps exatos
+        };
 
         // Atualiza recorde de pontos se superado
         if (score > currentUser.scores[currentColorCount]) {
             currentUser.scores[currentColorCount] = score;
+            // Atualiza o histórico de velocidade do nível com os novos tempos absolutos
+            currentUser.speed[currentColorCount] = [...sessionReactionTimes];
         }
 
         saveUsers();
