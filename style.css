@@ -869,13 +869,46 @@ body {
 
 /* Container que agrupa todos os níveis (4C a 9C) */
 
+
+/* Ajuste para o contêiner pai das estatísticas */
+
 #stats-speed-chart {
     display: grid;
     grid-template-columns: 1fr 1fr;
     /* Duas colunas */
-    gap: 15px;
-    /* Espaço entre os blocos */
+    gap: 10px;
     margin-top: 10px;
+    width: 100%;
+    /* Garante que o grid ocupe o espaço disponível */
+    box-sizing: border-box;
+    /* Inclui padding no cálculo do tamanho */
+    overflow-x: hidden;
+    /* Evita que elementos estourem lateralmente */
+}
+
+
+/* Ajuste nos grupos para garantir que não empurrem o layout */
+
+.stats-speed-group {
+    background: var(--bg-glass);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Essencial para que colunas de grid não estourem */
+}
+
+
+/* Ajuste do gráfico interno para ser responsivo */
+
+.stats-speed-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 40px;
+    width: 100%;
 }
 
 

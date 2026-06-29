@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gel-memory-v220';
+const CACHE_NAME = 'gel-memory-v221';
 
 const ASSETS_TO_CACHE = [
     './',
