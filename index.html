@@ -26,7 +26,7 @@
             </div>
             <div id="controls">
                 <button id="sound-btn" onclick="toggleSound()" title="Alternar Som">🔊</button>
-                <button onclick="showLoginModal()" title="Trocar Jogador">👥</button>
+                <button onclick="showLoginModal()" title="Configurações">🏠</button>
             </div>
         </div>
 
@@ -51,63 +51,66 @@
         </div>
     </div>
 
-    <!-- Modal Inicial de Configurações e Jogadores -->
+    <!-- Modal Inicial de Configurações -->
     <div id="login-overlay" class="modal-overlay show">
         <div class="modal-box">
-            <h1>Gabriela Accioly Psi</h1>
-            <h2>Jogo de Cores - Memória</h2>
+            <h2>Gabriela Accioly Psi</h2>
+            <h1>Jogo de Cores - Memória</h1>
+
             <div class="settings-group">
-                <h3>Tema Visual:</h3>
-                <div class="color-radios" style="margin-bottom: 12px;">
-                    <label><input type="radio" name="themeSelect" value="dark" checked onchange="applyTheme(this.value)"> Escuro</label>
-                    <label><input type="radio" name="themeSelect" value="neutral" onchange="applyTheme(this.value)"> Neutro</label>
-                    <label><input type="radio" name="themeSelect" value="light" onchange="applyTheme(this.value)"> Claro</label>
-                </div>
-
-                <h3 style="border-top: 1px solid var(--border-color); padding-top: 12px;">Quantidade de Cores:</h3>
-                <div class="color-radios">
-                    <label><input type="radio" name="colorCount" value="4" checked onchange="applySettings()"> 4 </label>
-                    <label><input type="radio" name="colorCount" value="5" onchange="applySettings()"> 5 </label>
-                    <label><input type="radio" name="colorCount" value="6" onchange="applySettings()"> 6 </label>
-                    <label><input type="radio" name="colorCount" value="7" onchange="applySettings()"> 7 </label>
-                    <label><input type="radio" name="colorCount" value="8" onchange="applySettings()"> 8 </label>
-                    <label><input type="radio" name="colorCount" value="9" onchange="applySettings()"> 9 </label>
+                <h3>Tema Visual</h3>
+                <div class="toggle-btn-group">
+                    <button class="btn-toggle btn-toggle-dark" data-theme="dark" onclick="applyTheme('dark')">🌙 Escuro</button>
+                    <button class="btn-toggle btn-toggle-neutral" data-theme="neutral" onclick="applyTheme('neutral')">🌤️ Neutro</button>
+                    <button class="btn-toggle btn-toggle-light" data-theme="light" onclick="applyTheme('light')">☀️ Claro</button>
                 </div>
             </div>
 
-            <div id="user-list-container">
-                <h3>Selecionar Jogador:</h3>
-                <ul id="user-list"></ul>
+            <div class="settings-group">
+                <h3>Quantidade de Cores</h3>
+                <div class="toggle-btn-group">
+                    <button class="btn-toggle btn-option" data-count="4" onclick="setColorCount(4)">4</button>
+                    <button class="btn-toggle btn-option" data-count="5" onclick="setColorCount(5)">5</button>
+                    <button class="btn-toggle btn-option" data-count="6" onclick="setColorCount(6)">6</button>
+                    <button class="btn-toggle btn-option" data-count="7" onclick="setColorCount(7)">7</button>
+                    <button class="btn-toggle btn-option" data-count="8" onclick="setColorCount(8)">8</button>
+                    <button class="btn-toggle btn-option" data-count="9" onclick="setColorCount(9)">9</button>
+                </div>
             </div>
+
+            <button class="btn-modal btn-player" onclick="showPlayerModal()" id="btn-select-player">
+                👤 Selecionar Jogador
+            </button>
+            <button class="btn-modal btn-no" onclick="playAnonymous()">Modo Anônimo</button>
+        </div>
+    </div>
+
+    <!-- Modal de Seleção de Jogador -->
+    <div id="player-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <h2>👤 Jogadores</h2>
+            <ul id="user-list"></ul>
 
             <div class="new-user-form">
-                <h3>Cadastrar Novo Perfil:</h3>
-                <input type="text" id="new-user-name" placeholder="Nome do Jogador" maxlength="15">
+                <input type="text" id="new-user-name" placeholder="Nome do novo jogador" maxlength="15">
                 <input type="number" id="new-user-age" placeholder="Idade (Opcional)" min="1" max="120">
-                <button class="btn-modal btn-action" onclick="createNewUser()">Cadastrar e Iniciar</button>
+                <button class="btn-modal btn-action" onclick="createNewUser()">➕ Cadastrar</button>
             </div>
 
-            <div class="btn-group" style="margin-top: 15px;">
-                <button class="btn-modal btn-no" onclick="playAnonymous()">Modo Anônimo</button>
-            </div>
+            <button class="btn-modal btn-no" onclick="closePlayerModal()">Fechar</button>
         </div>
     </div>
 
     <!-- Modal de Estatísticas (DUPLO GRÁFICO) -->
     <div id="stats-overlay" class="modal-overlay">
-        <div class="modal-box" style="max-width: 450px;">
+        <div class="modal-box" style="max-width: 520px;">
             <h2>Estatísticas</h2>
             <h3 id="stats-user-name" style="text-align:center; font-size: 16px; margin-bottom: 20px;"></h3>
 
             <div style="text-align: left; margin-bottom: 5px; font-size: 13px; color: var(--text-muted); font-weight: bold;">
                 🏆 Melhores Resultados
             </div>
-            <div id="stats-chart" class="chart-container"></div>
-
-            <div style="text-align: left; margin-top: 15px; margin-bottom: 5px; font-size: 13px; color: var(--text-muted); font-weight: bold;">
-                ⏱️ Tempos de Resposta
-            </div>
-            <div id="stats-speed-chart" class="chart-container chart-speed"></div>
+            <div id="stats-chart" class="stats-table-container"></div>
 
             <button class="btn-modal btn-no" style="margin-top:20px;" onclick="closeStats()">Fechar</button>
         </div>
@@ -131,6 +134,15 @@
             <h2>Fim da Rodada!</h2>
             <p id="gameover-msg"></p>
             <button class="btn-modal btn-yes" style="background: #3b82f6; color: white;" onclick="closeGameOver()">Tentar Novamente</button>
+        </div>
+    </div>
+
+    <!-- Modal do Termômetro das Emoções -->
+    <div id="mood-overlay" class="modal-overlay">
+        <div class="modal-box mood-box">
+            <h2>Como você está se sentindo hoje?</h2>
+            <div id="mood-grid" class="mood-grid"></div>
+            <button class="btn-modal btn-no" onclick="closeMoodModal()" style="margin-top:14px;">Pular</button>
         </div>
     </div>
 

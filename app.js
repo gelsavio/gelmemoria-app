@@ -54,15 +54,40 @@ function playTone(index, duration = 400) {
 function applyTheme(themeName) {
     document.documentElement.setAttribute('data-theme', themeName);
     localStorage.setItem('gapsi_theme', themeName);
+    updateThemeButtons(themeName);
+}
+
+function updateThemeButtons(themeName) {
+    document.querySelectorAll('.btn-toggle[data-theme]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === themeName);
+    });
+}
+
+function setColorCount(count) {
+    currentColorCount = count;
+    localStorage.setItem('gapsi_color_count', count);
+    applySettings();
+    updateColorCountButtons(count);
+}
+
+function updateColorCountButtons(count) {
+    document.querySelectorAll('.btn-toggle[data-count]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.count) === count);
+    });
 }
 
 function loadTheme() {
     const savedTheme = localStorage.getItem('gapsi_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    const themeRadios = document.getElementsByName('themeSelect');
-    for (const r of themeRadios) {
-        if (r.value === savedTheme) r.checked = true;
-    }
+    applyTheme(savedTheme);
+}
+
+function loadSettings() {
+    const savedTheme = localStorage.getItem('gapsi_theme') || 'dark';
+    const savedCount = parseInt(localStorage.getItem('gapsi_color_count') || currentColorCount, 10);
+    currentColorCount = [4, 5, 6, 7, 8, 9].includes(savedCount) ? savedCount : 4;
+    applyTheme(savedTheme);
+    updateColorCountButtons(currentColorCount);
+    applySettings();
 }
 
 /* =========================================================
@@ -70,6 +95,49 @@ function loadTheme() {
 ========================================================= */
 let users = [];
 let currentUser = null;
+const MOODS = [{
+        id: 'muito_feliz',
+        label: 'Muito feliz',
+        color: '#F59E0B',
+        bg: '#FFF3C4',
+        svg: `<circle cx="40" cy="40" r="36" fill="#FFF3C4" stroke="#F59E0B" stroke-width="3"/><ellipse cx="28" cy="33" rx="5" ry="6" fill="#1A2332"/><ellipse cx="52" cy="33" rx="5" ry="6" fill="#1A2332"/><circle cx="30" cy="31" r="2" fill="white"/><circle cx="54" cy="31" r="2" fill="white"/><path d="M20 46 Q40 62 60 46" fill="#F59E0B" stroke="#D97706" stroke-width="2"/><ellipse cx="18" cy="44" rx="7" ry="5" fill="#FCA5A5" opacity="0.5"/><ellipse cx="62" cy="44" rx="7" ry="5" fill="#FCA5A5" opacity="0.5"/>`
+    },
+    {
+        id: 'feliz',
+        label: 'Feliz',
+        color: '#10B981',
+        bg: '#D1FAE5',
+        svg: `<circle cx="40" cy="40" r="36" fill="#D1FAE5" stroke="#10B981" stroke-width="3"/><ellipse cx="28" cy="34" rx="4.5" ry="5" fill="#1A2332"/><ellipse cx="52" cy="34" rx="4.5" ry="5" fill="#1A2332"/><circle cx="30" cy="32" r="2" fill="white"/><circle cx="54" cy="32" r="2" fill="white"/><path d="M22 49 Q40 60 58 49" fill="none" stroke="#065F46" stroke-width="3" stroke-linecap="round"/><ellipse cx="18" cy="46" rx="6" ry="4" fill="#6EE7B7" opacity="0.5"/><ellipse cx="62" cy="46" rx="6" ry="4" fill="#6EE7B7" opacity="0.5"/>`
+    },
+    {
+        id: 'neutro',
+        label: 'Neutro',
+        color: '#94A3B8',
+        bg: '#F1F5F9',
+        svg: `<circle cx="40" cy="40" r="36" fill="#F1F5F9" stroke="#94A3B8" stroke-width="3"/><ellipse cx="28" cy="35" rx="4.5" ry="5" fill="#1A2332"/><ellipse cx="52" cy="35" rx="4.5" ry="5" fill="#1A2332"/><circle cx="30" cy="33" r="2" fill="white"/><circle cx="54" cy="33" r="2" fill="white"/><line x1="23" y1="51" x2="57" y2="51" stroke="#64748B" stroke-width="3" stroke-linecap="round"/>`
+    },
+    {
+        id: 'triste',
+        label: 'Triste',
+        color: '#3B82F6',
+        bg: '#EFF6FF',
+        svg: `<circle cx="40" cy="40" r="36" fill="#EFF6FF" stroke="#3B82F6" stroke-width="3"/><ellipse cx="28" cy="35" rx="4.5" ry="5" fill="#1A2332"/><ellipse cx="52" cy="35" rx="4.5" ry="5" fill="#1A2332"/><circle cx="30" cy="33" r="2" fill="white"/><circle cx="54" cy="33" r="2" fill="white"/><path d="M21 26 Q28 21 35 26" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"/><path d="M45 26 Q52 21 59 26" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"/><path d="M22 53 Q40 43 58 53" fill="none" stroke="#1D4ED8" stroke-width="3" stroke-linecap="round"/><ellipse cx="54" cy="44" rx="3" ry="4" fill="#93C5FD" opacity="0.8"/>`
+    },
+    {
+        id: 'medo',
+        label: 'Com medo',
+        color: '#A855F7',
+        bg: '#FAF5FF',
+        svg: `<circle cx="40" cy="40" r="36" fill="#FAF5FF" stroke="#A855F7" stroke-width="3"/><ellipse cx="28" cy="33" rx="7" ry="7.5" fill="#1A2332"/><ellipse cx="52" cy="33" rx="7" ry="7.5" fill="#1A2332"/><circle cx="30" cy="30" r="3" fill="white"/><circle cx="54" cy="30" r="3" fill="white"/><ellipse cx="40" cy="52" rx="10" ry="6.5" fill="#7C3AED"/><path d="M18 24 Q27 18 36 24" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"/><path d="M44 24 Q53 18 62 24" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"/>`
+    },
+    {
+        id: 'irritado',
+        label: 'Irritado',
+        color: '#EF4444',
+        bg: '#FEF2F2',
+        svg: `<circle cx="40" cy="40" r="36" fill="#FEF2F2" stroke="#EF4444" stroke-width="3"/><ellipse cx="28" cy="34" rx="4.5" ry="5" fill="#1A2332"/><ellipse cx="52" cy="34" rx="4.5" ry="5" fill="#1A2332"/><circle cx="30" cy="32" r="2" fill="white"/><circle cx="54" cy="32" r="2" fill="white"/><path d="M20 24 Q29 19 36 24" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"/><path d="M44 24 Q53 19 60 24" fill="none" stroke="#1A2332" stroke-width="2.5" stroke-linecap="round"/><path d="M23 55 Q40 45 57 55" fill="none" stroke="#DC2626" stroke-width="3" stroke-linecap="round"/>`
+    }
+];
 
 function loadUsers() {
     const stored = localStorage.getItem('gapsi_users');
@@ -97,26 +165,199 @@ function saveUsers() {
     localStorage.setItem('gapsi_users', JSON.stringify(users));
 }
 
-function applySettings() {
-    const radios = document.getElementsByName('colorCount');
-    for (const r of radios) {
-        if (r.checked) currentColorCount = parseInt(r.value);
+function saveRoundHistory() {
+    if (!currentUser || sessionReactionTimes.length === 0) return;
+
+    const times = [...sessionReactionTimes];
+    if (!currentUser.speed) currentUser.speed = { 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+    if (!currentUser.speed[currentColorCount]) currentUser.speed[currentColorCount] = [];
+
+    currentUser.speed[currentColorCount].push(times);
+    if (currentUser.speed[currentColorCount].length > 5) currentUser.speed[currentColorCount].shift();
+
+    if (score > currentUser.scores[currentColorCount]) {
+        currentUser.scores[currentColorCount] = score;
     }
 
+    const idx = users.findIndex(u => u.id === currentUser.id);
+    if (idx >= 0) users[idx] = currentUser;
+    saveUsers();
+    updatePlayerUI();
+}
+
+function saveSession() {
+    if (!currentUser || sessionReactionTimes.length < 2) return;
+
+    const sorted = [...sessionReactionTimes].sort((a, b) => a - b);
+    const avg = Math.round(sessionReactionTimes.reduce((s, v) => s + v, 0) / sessionReactionTimes.length);
+    const median = sorted.length % 2 === 0 ?
+        Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2) :
+        Math.round(sorted[Math.floor(sorted.length / 2)]);
+    const worst = Math.round(sorted[sorted.length - 1]);
+
+    const session = {
+        date: new Date().toLocaleDateString('pt-BR'),
+        colorCount: currentColorCount,
+        score,
+        avg,
+        median,
+        worst,
+        errors: 0,
+        times: [...sessionReactionTimes]
+    };
+
+    if (!currentUser.sessions) currentUser.sessions = [];
+    currentUser.sessions.push(session);
+    if (currentUser.sessions.length > 5) currentUser.sessions.shift();
+
+    const idx = users.findIndex(u => u.id === currentUser.id);
+    if (idx >= 0) users[idx] = currentUser;
+    saveUsers();
+}
+
+function renderMoodGrid() {
+    const grid = document.getElementById('mood-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    MOODS.forEach(mood => {
+        const btn = document.createElement('button');
+        btn.className = 'mood-option';
+        btn.innerHTML = `
+            <svg viewBox="0 0 80 80" width="40" height="40" xmlns="http://www.w3.org/2000/svg">${mood.svg}</svg>
+            <span>${mood.label}</span>
+        `;
+        btn.onclick = () => saveMood(mood);
+        grid.appendChild(btn);
+    });
+}
+
+function showMoodModal() {
+    renderMoodGrid();
+    document.getElementById('mood-overlay').classList.add('show');
+}
+
+function closeMoodModal() {
+    document.getElementById('mood-overlay').classList.remove('show');
+}
+
+function saveMood(mood) {
+    if (!currentUser) return;
+    if (!currentUser.moods) currentUser.moods = [];
+    currentUser.moods.push({
+        id: mood.id,
+        label: mood.label,
+        date: new Date().toLocaleDateString('pt-BR'),
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    });
+    if (currentUser.moods.length > 10) currentUser.moods.shift();
+    const idx = users.findIndex(u => u.id === currentUser.id);
+    if (idx >= 0) users[idx] = currentUser;
+    saveUsers();
+    closeMoodModal();
+}
+
+function showStats(id, event) {
+    event.stopPropagation();
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+
+    closePlayerModal();
+    document.getElementById('stats-user-name').textContent = user.name;
+    const chart = document.getElementById('stats-chart');
+    chart.innerHTML = '';
+
+    if (!user.sessions || user.sessions.length === 0) {
+        chart.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Nenhuma sessão registrada ainda.</p>';
+    } else {
+        const table = document.createElement('table');
+        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.78rem;';
+        table.innerHTML = `
+            <thead>
+                <tr style="color:var(--text-muted);border-bottom:1px solid var(--border-color);">
+                    <th style="padding:6px 4px;text-align:left;">Data</th>
+                    <th style="padding:6px 4px;text-align:left;">Cores</th>
+                    <th style="padding:6px 4px;text-align:right;">Pont.</th>
+                    <th style="padding:6px 4px;text-align:right;">Média</th>
+                    <th style="padding:6px 4px;text-align:right;">Mediana</th>
+                    <th style="padding:6px 4px;text-align:right;">Pior</th>
+                </tr>
+            </thead>
+            <tbody id="stats-tbody"></tbody>
+        `;
+        chart.appendChild(table);
+        const tbody = table.querySelector('#stats-tbody');
+        user.sessions.forEach((s, i) => {
+            const isLast = i === user.sessions.length - 1;
+            const tr = document.createElement('tr');
+            tr.style.cssText = `border-bottom:1px solid var(--border-color);${isLast ? 'font-weight:700;' : ''}`;
+            tr.innerHTML = `
+                <td style="padding:6px 4px;">${s.date}</td>
+                <td style="padding:6px 4px;">${s.colorCount}C</td>
+                <td style="padding:6px 4px;text-align:right;">${s.score}</td>
+                <td style="padding:6px 4px;text-align:right;">${s.avg}ms</td>
+                <td style="padding:6px 4px;text-align:right;">${s.median}ms</td>
+                <td style="padding:6px 4px;text-align:right;">${s.worst}ms</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    if (user.moods && user.moods.length > 0) {
+        const moodDiv = document.createElement('div');
+        moodDiv.style.cssText = 'margin-top:16px;';
+        moodDiv.innerHTML = '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Histórico de humor</div>';
+        const moodList = document.createElement('div');
+        moodList.style.cssText = 'display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;';
+        [...user.moods].reverse().slice(0, 10).forEach(m => {
+            const moodData = MOODS.find(x => x.id === m.id);
+            const row = document.createElement('div');
+            row.style.cssText = `display:flex;align-items:center;gap:9px;padding:5px 9px;border-radius:8px;background:${moodData ? moodData.bg : 'var(--bg-glass)'};font-size:0.8rem;`;
+            row.innerHTML = `
+                <svg viewBox="0 0 80 80" width="26" height="26" xmlns="http://www.w3.org/2000/svg">${moodData ? moodData.svg : ''}</svg>
+                <span style="flex:1;font-weight:700;color:${moodData ? moodData.color : 'var(--text-main)'};">${m.label}</span>
+                <span style="font-size:0.7rem;color:var(--text-muted);">${m.date} ${m.time}</span>`;
+            moodList.appendChild(row);
+        });
+        moodDiv.appendChild(moodList);
+        chart.appendChild(moodDiv);
+    }
+
+    document.getElementById('stats-overlay').classList.add('show');
+}
+
+function applySettings() {
     const board = document.getElementById('board');
-    board.className = `simon-board board-${currentColorCount}`;
+    if (board) {
+        board.className = `simon-board board-${currentColorCount}`;
+    }
 
     for (let i = 0; i < 9; i++) {
-        document.getElementById(`pad-${i}`).style.display = (i < currentColorCount) ? 'block' : 'none';
+        const pad = document.getElementById(`pad-${i}`);
+        if (pad) {
+            pad.style.display = (i < currentColorCount) ? 'block' : 'none';
+        }
     }
+
+    updateColorCountButtons(currentColorCount);
     updatePlayerUI();
 }
 
 function showLoginModal() {
     loadUsers();
-    renderUserList();
+    loadSettings();
     if (isPlaying) toggleGame();
     document.getElementById('login-overlay').classList.add('show');
+    document.getElementById('player-modal-overlay').classList.remove('show');
+}
+
+function showPlayerModal() {
+    loadUsers();
+    renderUserList();
+    document.getElementById('player-modal-overlay').classList.add('show');
+}
+
+function closePlayerModal() {
+    document.getElementById('player-modal-overlay').classList.remove('show');
 }
 
 function renderUserList() {
@@ -187,7 +428,9 @@ function playAnonymous() {
 function finalizeLogin() {
     updatePlayerUI();
     document.getElementById('login-overlay').classList.remove('show');
+    document.getElementById('player-modal-overlay').classList.remove('show');
     resetGameStats();
+    if (currentUser) showMoodModal();
 }
 
 let userToDelete = null;
@@ -216,92 +459,6 @@ function executeDelete() {
 /* =========================================================
    ESTATÍSTICAS (GRÁFICO DE BARRAS EMPILHADAS)
 ========================================================= */
-function showStats(id, event) {
-    event.stopPropagation();
-    const user = users.find(u => u.id === id);
-    if (!user) return;
-
-    document.getElementById('stats-user-name').textContent = user.name;
-    const chartScore = document.getElementById('stats-chart');
-    const chartSpeed = document.getElementById('stats-speed-chart');
-
-    chartScore.innerHTML = '';
-    chartSpeed.innerHTML = '';
-
-    const maxScore = Math.max(...Object.values(user.scores), 10);
-
-    [4, 5, 6, 7, 8, 9].forEach(colors => {
-        // --- 1. Gráfico de Pontos ---
-        const record = user.scores[colors];
-        chartScore.innerHTML += `
-            <div class="bar-wrapper">
-                <span class="bar-value" style="font-size: 10px; margin-bottom: 2px;">${record > 0 ? record : ''}</span>
-                <div style="display: flex; gap: 2px; align-items: flex-end; height: 60px;">
-                    <div class="bar-fill-score" style="height: ${(record / maxScore) * 100}%" title="Melhor: ${record}"></div>
-                </div>
-                <span class="bar-label">${colors}C</span>
-            </div>
-        `;
-
-        // --- 2. Gráfico de Velocidade (Tentativa 0 + 5 Últimas) ---
-        const history = user.speed[colors] || [];
-
-        // Encontrar a melhor rodada (Tentativa 0)
-        let bestRound = null;
-        let bestTotal = Infinity;
-        history.forEach(round => {
-            const total = round.reduce((a, b) => a + b, 0);
-            if (total > 0 && total < bestTotal) {
-                bestTotal = total;
-                bestRound = round;
-            }
-        });
-
-        const last5 = history.slice(-5);
-        const allToDisplay = bestRound ? [bestRound, ...last5] : last5;
-        const maxTotal = allToDisplay.reduce((max, r) => {
-            const t = r.reduce((a, b) => a + b, 0);
-            return t > max ? t : max;
-        }, 1);
-
-        function buildBar(round, label, isBest) {
-            const total = round.reduce((a, b) => a + b, 0);
-            const heightPct = (total / maxTotal) * 100;
-            const displayTime = (total / 1000).toFixed(1) + 's';
-            let segmentsHTML = '';
-            round.forEach((t, i) => {
-                const pct = (t / total) * 100;
-                const color = isBest ? '#f59e0b' : segmentColors[i % segmentColors.length];
-                segmentsHTML += `<div class="bar-segment" style="height:${pct}%;background:${color};" title="Toque ${i + 1}: ${(t / 1000).toFixed(2)}s"></div>`;
-            });
-            return `
-                <div class="bar-wrapper" style="width:20px;"> 
-                 <span class="bar-value" style="font-size:7px;">${total > 0 ? displayTime : ''}</span>
-                 <div class="bar-fill-container" style="height:${heightPct}%">${segmentsHTML}</div>
-                 <span class="bar-label" style="font-size:7px;">${label}</span>
-                </div>`;
-        }
-
-        let barsHTML = '';
-        // Slot 0: Melhor Resultado
-        barsHTML += bestRound ? buildBar(bestRound, '🏆', true) : '<div class="bar-wrapper" style="width:22px;"><span class="bar-label" style="font-size:8px;">—</span></div>';
-
-        // Slots 1 a 5: Histórico
-        for (let i = 0; i < 5; i++) {
-            barsHTML += last5[i] ? buildBar(last5[i], `${i + 1}`, false) : '<div class="bar-wrapper" style="width:22px;"><span class="bar-label" style="font-size:8px;">—</span></div>';
-        }
-
-        chartSpeed.innerHTML += `
-            <div class="stats-speed-group">
-                <span class="stats-speed-label">${colors}C</span>
-                <div class="stats-speed-bars">${barsHTML}</div>
-            </div>
-        `;
-    });
-
-    document.getElementById('stats-overlay').classList.add('show');
-}
-
 // Função auxiliar para mudar a mensagem
 function updateStatus(text, type) {
     const el = document.getElementById('status-message');
@@ -411,7 +568,7 @@ function handlePadClick(index) {
 
     // Se houver um clique anterior, calculamos o intervalo (Delta)
     if (lastClickTime > 0) {
-        const deltaTime = now - lastClickTime;
+        const deltaTime = Math.round(now - lastClickTime);
         sessionReactionTimes.push(deltaTime);
     }
 
@@ -426,6 +583,8 @@ function handlePadClick(index) {
         playerStep++;
         if (playerStep === sequence.length) {
             isAcceptingInput = false;
+            saveRoundHistory();
+            saveSession();
             setTrackedTimeout(nextRound, 600);
         }
     } else {
@@ -462,23 +621,8 @@ function gameOver() {
 
     // Salva os dados se houver um usuário logado e se a rodada teve pelo menos um toque
     if (currentUser && sessionReactionTimes.length > 0) {
-        const times = [...sessionReactionTimes];
-
-        // Adiciona a rodada atual ao histórico (array de arrays)
-        currentUser.speed[currentColorCount].push(times);
-
-        // Mantém apenas as últimas 5 tentativas no histórico de rodadas
-        if (currentUser.speed[currentColorCount].length > 5) {
-            currentUser.speed[currentColorCount].shift();
-        }
-
-        // Atualiza recorde de pontos se superado
-        if (score > currentUser.scores[currentColorCount]) {
-            currentUser.scores[currentColorCount] = score;
-        }
-
-        saveUsers();
-        updatePlayerUI();
+        saveRoundHistory();
+        saveSession();
     }
 
     // Exibe a mensagem de feedback para a criança
@@ -505,5 +649,6 @@ function closeGameOver() {
 window.addEventListener('DOMContentLoaded', () => {
     loadTheme();
     loadUsers();
+    renderMoodGrid();
     showLoginModal();
 });
