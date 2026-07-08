@@ -6,33 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gabriela Accioly Psi - Memória</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=1.5.0">
+    <link rel="stylesheet" href="style.css?v=1.5.1">
 </head>
 
 <body>
     <div id="game-container">
         <div id="top-bar">
-            <div class="brand-section">
-                <h1>Gabriela Accioly - Psicologia</h1>
-                <h2>Jogo de Cores - Memória</h2>
-                <div id="item-atualizar-app" style="display:none;" onclick="forcarAtualizacao()">
-                    🔄 Nova versão! Atualizar
+            <div class="top-row">
+                <div class="brand-section">
+                    <h1>Gabriela Accioly - Psicologia</h1>
+                    <h2>Jogo de Cores - Memória</h2>
+                    <div id="item-atualizar-app" style="display:none;" onclick="forcarAtualizacao()">
+                        🔄 Nova versão! Atualizar
+                    </div>
+                </div>
+
+                <div id="controls" class="controls-block">
+                    <button id="stats-btn" onclick="openStatsShortcut(event)" title="Estatísticas">📊</button>
+                    <div id="current-mood-badge" class="mood-badge" title="Humor atual"></div>
+                    <button id="sound-btn" onclick="toggleSound()" title="Alternar Som">🔊</button>
+                    <button id="btn-settings" onclick="showLoginModal()" title="Configurações">🏠</button>
                 </div>
             </div>
-            <div id="stats">
-                <span>👤 <span id="current-player-name">Anônimo</span></span>
-                <span>⭐ <span id="current-score">0</span> pts</span>
-                <span>🏆 <span id="high-score">0</span></span>
-            </div>
-            <div id="controls">
-                <button id="sound-btn" onclick="toggleSound()" title="Alternar Som">🔊</button>
-                <button onclick="showLoginModal()" title="Configurações">🏠</button>
+
+            <div class="bottom-row">
+                <div id="player-info">
+                    <span>👤 <span id="current-player-name">Anônimo</span></span>
+                    <span>⭐ <span id="current-score">0</span> pts</span>
+                    <span>🏆 <span id="high-score">0</span></span>
+                </div>
             </div>
         </div>
 
         <div id="board-area">
-            <div id="status-message" class="status-idle">Prepare-se para começar!</div>
-
             <div class="simon-board board-4" id="board">
                 <div class="pad green" id="pad-0" onclick="handlePadClick(0)"></div>
                 <div class="pad red" id="pad-1" onclick="handlePadClick(1)"></div>
@@ -45,8 +51,11 @@
                 <div class="pad lime" id="pad-8" onclick="handlePadClick(8)" style="display:none;"></div>
             </div>
 
-            <div class="game-action">
-                <button id="start-btn" onclick="toggleGame()">JOGAR</button>
+            <div class="status-actions">
+                <div id="status-message" class="status-idle">Prepare-se para começar!</div>
+                <div class="game-action">
+                    <button id="start-btn" onclick="toggleGame()">JOGAR</button>
+                </div>
             </div>
         </div>
     </div>
@@ -55,7 +64,7 @@
     <div id="login-overlay" class="modal-overlay show">
         <div class="modal-box">
             <h2>Gabriela Accioly Psi</h2>
-            <h1>Jogo de Cores - Memória</h1>
+            <h2>Jogo de Cores - Memória</h2>
 
             <div class="settings-group">
                 <h3>Tema Visual</h3>
@@ -82,6 +91,7 @@
                 👤 Selecionar Jogador
             </button>
             <button class="btn-modal btn-no" onclick="playAnonymous()">Modo Anônimo</button>
+            <div id="app-version" class="modal-version" aria-hidden="true"></div>
         </div>
     </div>
 
@@ -146,7 +156,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=2.0.1"></script>
+    <script src="app.js?v=2.0.2"></script>
     <script>
         let newWorker;
         if ('serviceWorker' in navigator) {
@@ -170,6 +180,13 @@
             });
             window.location.reload();
         }
+    </script>
+    <script>
+        // Preenche a versão do app de forma discreta no modal a partir do manifest
+        fetch('manifest.json').then(res => res.json()).then(man => {
+            const el = document.getElementById('app-version');
+            if (el && man && man.version) el.textContent = 'v' + man.version;
+        }).catch(() => {});
     </script>
 </body>
 

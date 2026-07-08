@@ -14,6 +14,7 @@ let isAcceptingInput = false;
 // Variáveis de Tempo de Reação
 let lastClickTime = 0;
 let sessionReactionTimes = [];
+let pendingAttemptStats = null;
 
 // Paleta de cores para desenhar as "fatias" do gráfico empilhado
 const segmentColors = ['#f43f5e', '#3b82f6', '#eab308', '#84cc16', '#a855f7', '#06b6d4', '#f97316', '#ec4899', '#10b981', '#6366f1'];
@@ -185,8 +186,8 @@ function saveRoundHistory() {
     updatePlayerUI();
 }
 
-function saveSession() {
-    if (!currentUser || sessionReactionTimes.length < 2) return;
+function buildAttemptStats() {
+    if (!currentUser || sessionReactionTimes.length === 0) return null;
 
     const sorted = [...sessionReactionTimes].sort((a, b) => a - b);
     const avg = Math.round(sessionReactionTimes.reduce((s, v) => s + v, 0) / sessionReactionTimes.length);
@@ -194,8 +195,9 @@ function saveSession() {
         Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2) :
         Math.round(sorted[Math.floor(sorted.length / 2)]);
     const worst = Math.round(sorted[sorted.length - 1]);
+    const latestMood = getLatestMoodData(currentUser);
 
-    const session = {
+    return {
         date: new Date().toLocaleDateString('pt-BR'),
         colorCount: currentColorCount,
         score,
@@ -203,16 +205,28 @@ function saveSession() {
         median,
         worst,
         errors: 0,
-        times: [...sessionReactionTimes]
+        times: [...sessionReactionTimes],
+        moodId: latestMood ? latestMood.id : null,
+        moodLabel: latestMood ? latestMood.label : null
     };
+}
+
+function saveSession() {
+    if (!currentUser || !pendingAttemptStats) return;
 
     if (!currentUser.sessions) currentUser.sessions = [];
-    currentUser.sessions.push(session);
+    currentUser.sessions.push(pendingAttemptStats);
     if (currentUser.sessions.length > 5) currentUser.sessions.shift();
 
     const idx = users.findIndex(u => u.id === currentUser.id);
     if (idx >= 0) users[idx] = currentUser;
     saveUsers();
+    pendingAttemptStats = null;
+}
+
+function updatePendingAttemptStats() {
+    const stats = buildAttemptStats();
+    if (stats) pendingAttemptStats = stats;
 }
 
 function renderMoodGrid() {
@@ -253,7 +267,28 @@ function saveMood(mood) {
     const idx = users.findIndex(u => u.id === currentUser.id);
     if (idx >= 0) users[idx] = currentUser;
     saveUsers();
+    updatePlayerUI();
     closeMoodModal();
+}
+
+function buildMoodIcon(moodId, size = 20) {
+    const moodData = MOODS.find(m => m.id === moodId);
+    if (!moodData) return '<span style="font-size:0.95rem;">🙂</span>';
+    return `<svg viewBox="0 0 80 80" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">${moodData.svg}</svg>`;
+}
+
+function getLatestMoodData(user = currentUser) {
+    if (!user || !user.moods || user.moods.length === 0) return null;
+    return user.moods[user.moods.length - 1];
+}
+
+function openStatsShortcut(event) {
+    event.stopPropagation();
+    if (currentUser) {
+        showStats(currentUser.id, event);
+    } else {
+        showPlayerModal();
+    }
 }
 
 function showStats(id, event) {
@@ -280,6 +315,7 @@ function showStats(id, event) {
                     <th style="padding:6px 4px;text-align:right;">Média</th>
                     <th style="padding:6px 4px;text-align:right;">Mediana</th>
                     <th style="padding:6px 4px;text-align:right;">Pior</th>
+                    <th style="padding:6px 4px;text-align:center;">Humor</th>
                 </tr>
             </thead>
             <tbody id="stats-tbody"></tbody>
@@ -297,29 +333,10 @@ function showStats(id, event) {
                 <td style="padding:6px 4px;text-align:right;">${s.avg}ms</td>
                 <td style="padding:6px 4px;text-align:right;">${s.median}ms</td>
                 <td style="padding:6px 4px;text-align:right;">${s.worst}ms</td>
+                <td style="padding:6px 4px;text-align:center;" title="${s.moodLabel || ''}">${s.moodId ? buildMoodIcon(s.moodId, 18) : '—'}</td>
             `;
             tbody.appendChild(tr);
         });
-    }
-
-    if (user.moods && user.moods.length > 0) {
-        const moodDiv = document.createElement('div');
-        moodDiv.style.cssText = 'margin-top:16px;';
-        moodDiv.innerHTML = '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Histórico de humor</div>';
-        const moodList = document.createElement('div');
-        moodList.style.cssText = 'display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;';
-        [...user.moods].reverse().slice(0, 10).forEach(m => {
-            const moodData = MOODS.find(x => x.id === m.id);
-            const row = document.createElement('div');
-            row.style.cssText = `display:flex;align-items:center;gap:9px;padding:5px 9px;border-radius:8px;background:${moodData ? moodData.bg : 'var(--bg-glass)'};font-size:0.8rem;`;
-            row.innerHTML = `
-                <svg viewBox="0 0 80 80" width="26" height="26" xmlns="http://www.w3.org/2000/svg">${moodData ? moodData.svg : ''}</svg>
-                <span style="flex:1;font-weight:700;color:${moodData ? moodData.color : 'var(--text-main)'};">${m.label}</span>
-                <span style="font-size:0.7rem;color:var(--text-muted);">${m.date} ${m.time}</span>`;
-            moodList.appendChild(row);
-        });
-        moodDiv.appendChild(moodList);
-        chart.appendChild(moodDiv);
     }
 
     document.getElementById('stats-overlay').classList.add('show');
@@ -491,6 +508,19 @@ function closeStats() {
 function updatePlayerUI() {
     document.getElementById('current-player-name').textContent = currentUser ? currentUser.name : 'Anônimo';
     document.getElementById('high-score').textContent = currentUser ? currentUser.scores[currentColorCount] : '0';
+
+    const moodBadge = document.getElementById('current-mood-badge');
+    if (moodBadge) {
+        const latestMood = getLatestMoodData(currentUser);
+        if (latestMood) {
+            const moodData = MOODS.find(m => m.id === latestMood.id);
+            moodBadge.innerHTML = moodData ? buildMoodIcon(moodData.id, 18) : '🙂';
+            moodBadge.title = moodData ? moodData.label : latestMood.label;
+        } else {
+            moodBadge.innerHTML = '🙂';
+            moodBadge.title = 'Humor não registrado';
+        }
+    }
 }
 
 /* =========================================================
@@ -513,6 +543,7 @@ function resetGameStats() {
     sequence = [];
     score = 0;
     sessionReactionTimes = [];
+    pendingAttemptStats = null;
     document.getElementById('current-score').textContent = score;
     // Força a mensagem inicial sempre que uma rodada é resetada
     updateStatus("Prepare-se para começar!", "idle");
@@ -528,6 +559,9 @@ function toggleGame() {
         isAcceptingInput = false;
         btn.textContent = 'JOGAR';
         btn.classList.remove('stop');
+        if (pendingAttemptStats) {
+            saveSession();
+        }
         resetGameStats();
     } else {
         isPlaying = true;
@@ -584,7 +618,7 @@ function handlePadClick(index) {
         if (playerStep === sequence.length) {
             isAcceptingInput = false;
             saveRoundHistory();
-            saveSession();
+            updatePendingAttemptStats();
             setTrackedTimeout(nextRound, 600);
         }
     } else {
@@ -619,8 +653,8 @@ function gameOver() {
         setTimeout(() => { isSoundEnabled = true; }, 800);
     }
 
-    // Salva os dados se houver um usuário logado e se a rodada teve pelo menos um toque
-    if (currentUser && sessionReactionTimes.length > 0) {
+    // Salva os dados se houver um usuário logado e se a tentativa tiver pelo menos um sucesso registrado
+    if (currentUser && pendingAttemptStats) {
         saveRoundHistory();
         saveSession();
     }

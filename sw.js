@@ -1,10 +1,10 @@
-const CACHE_NAME = 'gel-memory-v221';
+const CACHE_NAME = 'gel-memory-v2.0.2';
 
 const ASSETS_TO_CACHE = [
     './',
     'index.html',
-    'style.css',
-    'app.js',
+    'style.css?v=1.5.1',
+    'app.js?v=2.0.2',
     'manifest.json'
 ];
 

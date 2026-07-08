@@ -80,10 +80,8 @@ body {
 
 #top-bar {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     background: var(--bg-glass);
     backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
@@ -97,6 +95,33 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.controls-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bottom-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+#player-info {
+    display: flex;
+    gap: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
 }
 
 .brand-section h1 {
@@ -143,6 +168,7 @@ body {
 
 #controls {
     display: flex;
+    align-items: center;
     gap: 6px;
 }
 
@@ -159,6 +185,24 @@ body {
 #controls button:hover {
     background: rgba(255, 255, 255, 0.12);
     transform: translateY(-1px);
+}
+
+.mood-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    padding: 3px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.mood-badge svg {
+    width: 22px;
+    height: 22px;
 }
 
 
@@ -472,15 +516,15 @@ body {
     background: #10b981;
     color: white;
     border: none;
-    padding: 16px 50px;
-    border-radius: 30px;
+    padding: 10px 18px;
+    border-radius: 999px;
     font-weight: 800;
-    font-size: 18px;
+    font-size: 0.95rem;
     cursor: pointer;
-    box-shadow: 0 6px 0 #047857;
-    width: 220px;
+    box-shadow: 0 5px 0 #047857;
+    width: min(180px, 100%);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     transition: all 0.1s ease;
 }
 
@@ -491,7 +535,22 @@ body {
 
 #start-btn.stop {
     background: #ef4444;
-    box-shadow: 0 6px 0 #b91c1c;
+    box-shadow: 0 5px 0 #b91c1c;
+}
+
+@media (max-width: 480px) {
+    .status-actions {
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    #status-message,
+    #start-btn {
+        width: 100%;
+        max-width: 100%;
+        min-height: 44px;
+        font-size: 0.9rem;
+    }
 }
 
 
@@ -518,6 +577,13 @@ body {
     background: var(--bg-modal);
     backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
+    .modal-version {
+        margin-top: 10px;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-align: center;
+        opacity: 0.9;
+    }
     color: var(--text-main);
     border-radius: 24px;
     padding: 30px;
@@ -525,7 +591,8 @@ body {
     max-width: 400px;
     text-align: center;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    transition: background 0.4s ease, color 0.4s ease;
+    transition: background 0.4s ease,
+    color 0.4s ease;
 }
 
 .modal-box h2 {
@@ -847,16 +914,35 @@ body {
     pointer-events: none;
 }
 
+.status-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+#status-message,
+#start-btn {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #status-message {
     text-align: center;
     font-weight: bold;
-    font-size: 1rem;
-    padding: 8px 16px;
+    font-size: 0.95rem;
+    padding: 10px 12px;
     border-radius: 8px;
-    margin: 0 0 15px 0;
-    /* Remove margem superior, mantendo o respiro abaixo */
-    width: 100%;
-    max-width: 300px;
+    margin: 0;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 180px;
+    max-width: 240px;
     transition: all 0.3s ease;
     border: 1px solid transparent;
     background: var(--bg-glass);
@@ -881,10 +967,10 @@ body {
 /* Ajuste no container do botão para não empurrar a mensagem */
 
 .game-action {
-    margin-top: 10px;
+    margin-top: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 
